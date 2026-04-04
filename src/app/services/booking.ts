@@ -5,6 +5,7 @@ import {
   onSnapshot, 
   addDoc, 
   updateDoc, 
+  setDoc,
   doc, 
   query, 
   orderBy, 
@@ -37,14 +38,41 @@ export interface Booking {
   createdAt: string;
 }
 
+export interface PublicBooking {
+  id?: string;
+  userId: string;
+  roomType: string;
+  checkIn: string;
+  checkOut: string;
+  status: 'pending' | 'active' | 'archive' | 'rejected';
+  peopleCount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BookingService {
   allBookings = signal<Booking[]>([]);
   userBookings = signal<Booking[]>([]);
+  publicBookings = signal<PublicBooking[]>([]);
   
   private allUnsubscribe?: () => void;
   private userUnsubscribe?: () => void;
+  private publicUnsubscribe?: () => void;
   private currentUserId: string | null = null;
+
+  constructor() {
+    this.listenToPublicBookings();
+  }
+
+  listenToPublicBookings() {
+    if (this.publicUnsubscribe) return;
+    const q = query(collection(db, 'public_bookings'));
+    this.publicUnsubscribe = onSnapshot(q, (snapshot) => {
+      const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PublicBooking));
+      this.publicBookings.set(bookings);
+    }, (error) => {
+      console.error('Public bookings listener error:', error);
+    });
+  }
 
   private handleFirestoreError(error: FirestoreError, operationType: 'create' | 'update' | 'delete' | 'list' | 'get' | 'write', path: string | null) {
     const errInfo = {
@@ -129,7 +157,16 @@ export class BookingService {
 
   async createBooking(booking: Booking) {
     try {
-      await addDoc(collection(db, 'bookings'), booking);
+      const docRef = await addDoc(collection(db, 'bookings'), booking);
+      // Sync to public
+      await setDoc(doc(db, 'public_bookings', docRef.id), {
+        userId: booking.userId,
+        roomType: booking.roomType,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        status: booking.status,
+        peopleCount: booking.people?.length || 1
+      });
     } catch (error: unknown) {
       if (error instanceof FirestoreError && error.message.includes('permissions')) {
         this.handleFirestoreError(error, 'create', 'bookings');
@@ -143,6 +180,8 @@ export class BookingService {
       const update: { status: Booking['status']; assignedRoomId?: string } = { status };
       if (assignedRoomId) update.assignedRoomId = assignedRoomId;
       await updateDoc(doc(db, 'bookings', id), update);
+      // Sync to public
+      await setDoc(doc(db, 'public_bookings', id), { status }, { merge: true });
     } catch (error: unknown) {
       if (error instanceof FirestoreError && error.message.includes('permissions')) {
         this.handleFirestoreError(error, 'update', `bookings/${id}`);
@@ -154,10 +193,72 @@ export class BookingService {
   async updateBooking(id: string, data: Partial<Booking>) {
     try {
       await updateDoc(doc(db, 'bookings', id), data);
+      // Sync to public
+      const publicUpdate: Record<string, unknown> = {};
+      if (data.checkIn) publicUpdate['checkIn'] = data.checkIn;
+      if (data.checkOut) publicUpdate['checkOut'] = data.checkOut;
+      if (data.status) publicUpdate['status'] = data.status;
+      if (data.roomType) publicUpdate['roomType'] = data.roomType;
+      if (data.people) publicUpdate['peopleCount'] = data.people.length;
+      if (Object.keys(publicUpdate).length > 0) {
+        await setDoc(doc(db, 'public_bookings', id), publicUpdate, { merge: true });
+      }
     } catch (error: unknown) {
       if (error instanceof FirestoreError && error.message.includes('permissions')) {
         this.handleFirestoreError(error, 'update', `bookings/${id}`);
       }
+      throw error;
+    }
+  }
+
+  async deleteBooking(id: string) {
+    try {
+      await deleteDoc(doc(db, 'bookings', id));
+      await deleteDoc(doc(db, 'public_bookings', id));
+    } catch (error: unknown) {
+      if (error instanceof FirestoreError && error.message.includes('permissions')) {
+        this.handleFirestoreError(error, 'delete', `bookings/${id}`);
+      }
+      throw error;
+    }
+  }
+
+  async clearOldBookings(type: 'rejected' | 'archive' | 'all_old') {
+    try {
+      const bookingsToDelete = this.allBookings().filter(b => {
+        if (type === 'rejected') return b.status === 'rejected';
+        if (type === 'archive') return b.status === 'archive';
+        return b.status === 'rejected' || b.status === 'archive';
+      });
+
+      for (const b of bookingsToDelete) {
+        if (b.id) await this.deleteBooking(b.id);
+      }
+      return bookingsToDelete.length;
+    } catch (error) {
+      console.error('Clear old bookings error:', error);
+      throw error;
+    }
+  }
+
+  async syncPublicBookings() {
+    try {
+      const all = this.allBookings();
+      for (const b of all) {
+        if (b.id) {
+          await setDoc(doc(db, 'public_bookings', b.id), {
+            userId: b.userId,
+            roomType: b.roomType,
+            checkIn: b.checkIn,
+            checkOut: b.checkOut,
+            status: b.status,
+            peopleCount: b.people?.length || 1
+          });
+        }
+      }
+      return all.length;
+    } catch (error) {
+      console.error('Sync error:', error);
       throw error;
     }
   }

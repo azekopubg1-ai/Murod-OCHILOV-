@@ -131,13 +131,16 @@ import { CommonModule } from '@angular/common';
               @if (selectedCountryId() === 'other') {
                 <div class="space-y-2">
                   <label for="otherCountry" class="text-sm font-medium text-white/50">Davlat nomi</label>
-                  <input id="otherCountry" type="text" formControlName="otherCountry" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                  <input id="otherCountry" type="text" formControlName="otherCountry" placeholder="Davlatni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 </div>
               }
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
               <div class="space-y-2">
                 <label for="region" class="text-sm font-medium text-white/50">{{ t()('booking.region') }}</label>
                 @if (selectedCountryId() === 'other') {
-                  <input id="otherRegion" type="text" formControlName="otherRegion" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                  <input id="otherRegion" type="text" formControlName="otherRegion" placeholder="Viloyatni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 } @else {
                   <select id="region" formControlName="region" (change)="onRegionChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableRegions().length">
                     <option value="" disabled selected>{{ t()('booking.select') }}</option>
@@ -147,13 +150,10 @@ import { CommonModule } from '@angular/common';
                   </select>
                 }
               </div>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-6">
               <div class="space-y-2">
                 <label for="district" class="text-sm font-medium text-white/50">{{ t()('booking.district') }}</label>
                 @if (selectedCountryId() === 'other') {
-                  <input id="otherDistrict" type="text" formControlName="otherDistrict" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                  <input id="otherDistrict" type="text" formControlName="otherDistrict" placeholder="Tumanni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 } @else {
                   <select id="district" formControlName="district" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableDistricts().length">
                     <option value="" disabled selected>{{ t()('booking.select') }}</option>
@@ -163,10 +163,11 @@ import { CommonModule } from '@angular/common';
                   </select>
                 }
               </div>
-              <div class="space-y-2">
-                <label for="mahalla" class="text-sm font-medium text-white/50">{{ t()('booking.mahalla') }}</label>
-                <input id="mahalla" type="text" formControlName="mahalla" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="mahalla" class="text-sm font-medium text-white/50">{{ t()('booking.mahalla') }}</label>
+              <input id="mahalla" type="text" formControlName="mahalla" placeholder="Mahallani yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
             </div>
 
             <!-- Dates -->
@@ -249,7 +250,7 @@ export class BookingComponent implements OnInit {
   availableSpots = signal(0);
   today = new Date().toISOString().split('T')[0];
 
-  countries = this.locationService.getCountries();
+  countries = this.locationService.getCountries().filter(c => c.id === 'uz' || c.id === 'other');
   selectedCountryId = signal('');
   selectedRegionId = signal('');
 
@@ -351,8 +352,8 @@ export class BookingComponent implements OnInit {
     // Calculate total spots (beds)
     const totalSpots = (room.totalCount || 1) * (room.capacity || 1);
 
-    // Find all active bookings for this room type
-    const activeBookings = this.bookingService.allBookings().filter(b => 
+    // Find all active bookings for this room type from public bookings
+    const activeBookings = this.bookingService.publicBookings().filter(b => 
       b.roomType === roomType && 
       b.status !== 'rejected' && b.status !== 'archive'
     );
@@ -367,7 +368,7 @@ export class BookingComponent implements OnInit {
 
       const occupiedOnDay = activeBookings.filter(b => 
         new Date(b.checkIn) < dayEnd && new Date(b.checkOut) > dayStart
-      ).reduce((sum, b) => sum + (b.people?.length || 1), 0);
+      ).reduce((sum, b) => sum + (b.peopleCount || 1), 0);
 
       const remainingOnDay = totalSpots - occupiedOnDay;
       if (remainingOnDay < minRemaining) {
@@ -429,14 +430,15 @@ export class BookingComponent implements OnInit {
     let region = '';
     let district = '';
 
+    const lang = this.ts.getLanguage();
     if (formValue.country === 'other') {
       country = formValue.otherCountry || 'Boshqa';
       region = formValue.otherRegion || '';
       district = formValue.otherDistrict || '';
     } else {
-      country = this.countries.find(c => c.id === formValue.country)?.name['UZ'] || formValue.country || '';
-      region = this.availableRegions().find(r => r.id === formValue.region)?.name['UZ'] || formValue.region || '';
-      district = this.availableDistricts().find(d => d.id === formValue.district)?.name['UZ'] || formValue.district || '';
+      country = this.countries.find(c => c.id === formValue.country)?.name[lang] || formValue.country || '';
+      region = this.availableRegions().find(r => r.id === formValue.region)?.name[lang] || formValue.region || '';
+      district = this.availableDistricts().find(d => d.id === formValue.district)?.name[lang] || formValue.district || '';
     }
 
     const booking: Booking = {

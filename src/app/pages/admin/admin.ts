@@ -10,6 +10,8 @@ import { NavbarComponent } from '../../components/navbar';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../firebase';
 
 type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'rooms' | 'settings' | 'admins';
 
@@ -83,6 +85,15 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       Saqlash
                     </button>
                   </form>
+
+                  <div class="pt-8 border-t border-white/5 space-y-4">
+                    <h3 class="font-bold">Tizimni sinxronizatsiya qilish</h3>
+                    <p class="text-xs text-white/50">Agar bron qilishda bo'sh joylar noto'g'ri ko'rinsa, ma'lumotlarni qayta sinxronizatsiya qiling.</p>
+                    <button (click)="onSyncPublic()" class="w-full glass py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
+                      <mat-icon>sync</mat-icon>
+                      Bo'sh joylarni sinxronizatsiya qilish
+                    </button>
+                  </div>
                 </div>
               } @else if (activeTab() === 'admins') {
                 <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] space-y-8">
@@ -184,7 +195,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <select formControlName="country" (change)="onCountryChange($event)" class="glass p-4 rounded-2xl appearance-none">
-                        @for (country of locationService.getCountries(); track country.id) {
+                        @for (country of countries; track country.id) {
                           <option [value]="country.id">{{ country.name[ts.getLanguage()] }}</option>
                         }
                       </select>
@@ -194,23 +205,30 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      @if (selectedCountry() === 'other') {
-                        <input type="text" formControlName="otherRegion" placeholder="Viloyat" class="glass p-4 rounded-2xl">
-                        <input type="text" formControlName="otherDistrict" placeholder="Tuman" class="glass p-4 rounded-2xl">
-                      } @else {
-                        <select formControlName="region" (change)="onRegionChange($event)" class="glass p-4 rounded-2xl appearance-none">
-                          <option value="" disabled selected>Viloyat</option>
-                          @for (region of regions(); track region.id) {
-                            <option [value]="region.id">{{ region.name[ts.getLanguage()] }}</option>
-                          }
-                        </select>
-                        <select formControlName="district" class="glass p-4 rounded-2xl appearance-none">
-                          <option value="" disabled selected>Tuman</option>
-                          @for (district of districts(); track district.id) {
-                            <option [value]="district.id">{{ district.name[ts.getLanguage()] }}</option>
-                          }
-                        </select>
-                      }
+                      <div class="space-y-2">
+                        @if (selectedCountry() === 'other') {
+                          <input type="text" formControlName="otherRegion" placeholder="Viloyat" class="w-full glass p-4 rounded-2xl">
+                        } @else {
+                          <select formControlName="region" (change)="onRegionChange($event)" class="w-full glass p-4 rounded-2xl appearance-none">
+                            <option value="" disabled selected>Viloyat</option>
+                            @for (region of regions(); track region.id) {
+                              <option [value]="region.id">{{ region.name[ts.getLanguage()] }}</option>
+                            }
+                          </select>
+                        }
+                      </div>
+                      <div class="space-y-2">
+                        @if (selectedCountry() === 'other') {
+                          <input type="text" formControlName="otherDistrict" placeholder="Tuman" class="w-full glass p-4 rounded-2xl">
+                        } @else {
+                          <select formControlName="district" class="w-full glass p-4 rounded-2xl appearance-none">
+                            <option value="" disabled selected>Tuman</option>
+                            @for (district of districts(); track district.id) {
+                              <option [value]="district.id">{{ district.name[ts.getLanguage()] }}</option>
+                            }
+                          </select>
+                        }
+                      </div>
                     </div>
                     <input type="text" formControlName="mahalla" placeholder="Mahalla" class="w-full glass p-4 rounded-2xl">
 
@@ -242,7 +260,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                             <img [src]="img" class="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0" alt="Room thumbnail" referrerpolicy="no-referrer">
                           }
                         </div>
-                        <button (click)="roomService.deleteRoom(room.id!)" class="absolute top-4 right-4 text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all">
+                        <button (click)="onDeleteRoom(room.id!)" class="absolute top-4 right-4 text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -338,20 +356,53 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                           </div>
                         </div>
                       } @else if (booking.status === 'active') {
-                        <div class="flex flex-col md:flex-row gap-3 pt-2">
+                        <div class="flex flex-col gap-3 pt-2">
+                          @if (extendingBookingId() === booking.id) {
+                            <div class="glass p-4 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2">
+                              <label [for]="'extend-' + booking.id" class="text-xs font-bold text-white/30 uppercase tracking-widest">Yangi chiqish sanasi</label>
+                              <div class="flex gap-2">
+                                <input [id]="'extend-' + booking.id" #newDateInput type="date" [value]="booking.checkOut" class="flex-1 glass p-3 rounded-xl text-sm focus:outline-none">
+                                <button 
+                                  (click)="confirmExtension(booking, newDateInput.value)"
+                                  class="bg-emerald-500 px-4 py-2 rounded-xl font-bold text-sm"
+                                >
+                                  Saqlash
+                                </button>
+                                <button 
+                                  (click)="extendingBookingId.set(null)"
+                                  class="glass px-4 py-2 rounded-xl font-bold text-sm"
+                                >
+                                  Bekor qilish
+                                </button>
+                              </div>
+                            </div>
+                          } @else {
+                            <div class="flex flex-col md:flex-row gap-3">
+                              <button 
+                                (click)="onExtendBooking(booking)"
+                                class="flex-1 glass hover:bg-white/10 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                              >
+                                <mat-icon class="text-sm">update</mat-icon>
+                                {{ t()('admin.extend') }}
+                              </button>
+                              <button 
+                                (click)="bookingService.updateBookingStatus(booking.id!, 'archive')"
+                                class="flex-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                              >
+                                <mat-icon class="text-sm">logout</mat-icon>
+                                {{ t()('admin.terminate') }}
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      } @else if (activeTab() === 'archive' || activeTab() === 'rejected') {
+                        <div class="pt-2">
                           <button 
-                            (click)="onExtendBooking(booking)"
-                            class="flex-1 glass hover:bg-white/10 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                            (click)="onDeleteBooking(booking.id!)"
+                            class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
                           >
-                            <mat-icon class="text-sm">update</mat-icon>
-                            {{ t()('admin.extend') }}
-                          </button>
-                          <button 
-                            (click)="bookingService.updateBookingStatus(booking.id!, 'archive')"
-                            class="flex-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
-                          >
-                            <mat-icon class="text-sm">logout</mat-icon>
-                            {{ t()('admin.terminate') }}
+                            <mat-icon class="text-sm">delete</mat-icon>
+                            Butunlay o'chirish
                           </button>
                         </div>
                       }
@@ -383,21 +434,51 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                     
                     <div class="space-y-2">
                       <label for="room-images" class="text-xs font-bold text-white/30">{{ t()('admin.images') }}</label>
-                      <div id="room-images" formArrayName="images" class="space-y-2">
+                      
+                      <!-- File Upload -->
+                      <div class="glass p-4 rounded-2xl border-dashed border-white/10 hover:border-emerald-500/50 transition-all relative group cursor-pointer">
+                        <input 
+                          type="file" 
+                          (change)="onFileSelected($event)" 
+                          accept="image/*"
+                          class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                          [disabled]="uploadingImage()"
+                        >
+                        <div class="flex flex-col items-center justify-center gap-2 py-2">
+                          <mat-icon class="text-white/30 group-hover:text-emerald-500 transition-colors">cloud_upload</mat-icon>
+                          <span class="text-[10px] font-bold text-white/30 group-hover:text-white transition-colors">Qurilmadan rasm yuklash</span>
+                        </div>
+                        @if (uploadingImage()) {
+                          <div class="absolute inset-0 bg-zinc-950/80 rounded-2xl flex flex-col items-center justify-center gap-2 z-20">
+                            <div class="w-24 h-1 bg-white/10 rounded-full overflow-hidden">
+                              <div class="h-full bg-emerald-500 transition-all duration-300" [style.width.%]="uploadProgress()"></div>
+                            </div>
+                            <span class="text-[10px] font-bold">{{ uploadProgress() | number:'1.0-0' }}%</span>
+                          </div>
+                        }
+                      </div>
+
+                      <div id="room-images" formArrayName="images" class="space-y-3 mt-4">
                         @for (img of roomImagesArray.controls; track $index) {
-                          <div class="flex gap-2">
-                            <input [formControlName]="$index" placeholder="Image URL" class="flex-1 glass p-3 rounded-xl text-xs focus:outline-none">
-                            @if (roomImagesArray.length > 3) {
-                              <button (click)="removeImage($index)" type="button" class="text-rose-500">
-                                <mat-icon>remove_circle</mat-icon>
+                          <div class="space-y-2">
+                            <div class="flex gap-2">
+                              <input [formControlName]="$index" placeholder="Image URL" class="flex-1 glass p-3 rounded-xl text-xs focus:outline-none">
+                              <button (click)="removeImage($index)" type="button" class="text-rose-500 hover:bg-rose-500/10 p-2 rounded-xl transition-all">
+                                <mat-icon>delete</mat-icon>
                               </button>
+                            </div>
+                            @if (img.value) {
+                              <div class="relative w-full aspect-video rounded-xl overflow-hidden glass">
+                                <img [src]="img.value" class="w-full h-full object-cover" alt="Preview" referrerpolicy="no-referrer">
+                              </div>
                             }
                           </div>
                         }
                       </div>
+                      
                       @if (roomImagesArray.length < 10) {
-                        <button (click)="addImage()" type="button" class="text-emerald-500 text-xs flex items-center gap-1 mt-2">
-                          <mat-icon class="text-sm">add_circle</mat-icon> Rasm qo'shish
+                        <button (click)="addImage()" type="button" class="w-full glass py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-white/5 transition-all mt-2">
+                          <mat-icon class="text-sm">add_link</mat-icon> URL orqali rasm qo'shish
                         </button>
                       }
                     </div>
@@ -413,6 +494,19 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                 </div>
               } @else {
                 <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] space-y-6">
+                  @if (activeTab() === 'archive' || activeTab() === 'rejected') {
+                    <div class="space-y-4 pb-6 border-b border-white/5">
+                      <h3 class="font-bold">Tozalash</h3>
+                      <p class="text-xs text-white/50">Barcha {{ activeTab() === 'archive' ? 'arxivlangan' : 'rad etilgan' }} bronlarni bir marta bosish bilan o'chirishingiz mumkin.</p>
+                      <button 
+                        (click)="onClearOld(activeTab() === 'archive' ? 'archive' : 'rejected')"
+                        class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                      >
+                        <mat-icon class="text-sm">auto_delete</mat-icon>
+                        Hammasini tozalash
+                      </button>
+                    </div>
+                  }
                   <h3 class="font-bold">Statistika</h3>
                   <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
                     <div class="flex justify-between items-center">
@@ -471,9 +565,13 @@ export class AdminComponent implements OnDestroy {
   t = computed(() => this.ts.t());
   activeTab = signal<AdminTab>('pending');
   peopleCount = signal(1);
+  countries = this.locationService.getCountries().filter(c => c.id === 'uz' || c.id === 'other');
   selectedCountry = signal('uz');
   searchQuery = signal('');
   isAddingAdmin = signal(false);
+  extendingBookingId = signal<string | null>(null);
+  uploadingImage = signal(false);
+  uploadProgress = signal(0);
 
   availablePermissions = [
     { id: 'all', label: 'Barcha huquqlar' },
@@ -597,9 +695,39 @@ export class AdminComponent implements OnDestroy {
   }
 
   removeImage(index: number) {
-    if (this.roomImagesArray.length > 3) {
-      this.roomImagesArray.removeAt(index);
-    }
+    this.roomImagesArray.removeAt(index);
+  }
+
+  async onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const file = input.files[0];
+    const path = `rooms/${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, path);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    this.uploadingImage.set(true);
+    this.uploadProgress.set(0);
+
+    uploadTask.on('state_changed', 
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        this.uploadProgress.set(progress);
+      }, 
+      (error) => {
+        console.error('Upload error:', error);
+        this.uploadingImage.set(false);
+        alert('Rasm yuklashda xatolik yuz berdi.');
+      }, 
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        this.roomImagesArray.push(this.fb.control(downloadURL, Validators.required));
+        this.uploadingImage.set(false);
+        this.uploadProgress.set(0);
+        input.value = ''; // Reset input
+      }
+    );
   }
 
   offlineForm = this.fb.group({
@@ -618,7 +746,7 @@ export class AdminComponent implements OnDestroy {
   });
 
   regions = computed(() => {
-    const country = this.locationService.getCountries().find(c => c.id === this.selectedCountry());
+    const country = this.countries.find(c => c.id === this.selectedCountry());
     return country?.regions || [];
   });
 
@@ -684,7 +812,7 @@ export class AdminComponent implements OnDestroy {
       regionName = val.otherRegion || '';
       districtName = val.otherDistrict || '';
     } else {
-      countryName = this.locationService.getCountries().find(c => c.id === val.country)?.name[lang] || val.country || '';
+      countryName = this.countries.find(c => c.id === val.country)?.name[lang] || val.country || '';
       regionName = this.regions().find(r => r.id === val.region)?.name[lang] || val.region || '';
       districtName = this.districts().find(d => d.id === val.district)?.name[lang] || val.district || '';
     }
@@ -800,6 +928,18 @@ export class AdminComponent implements OnDestroy {
     }
   }
 
+  async onDeleteRoom(id: string) {
+    if (confirm("Ushbu xonani butunlay o'chirmoqchimisiz?")) {
+      try {
+        await this.roomService.deleteRoom(id);
+        alert("Xona o'chirildi.");
+      } catch (error) {
+        console.error('Delete room error:', error);
+        alert("Xonani o'chirishda xatolik yuz berdi.");
+      }
+    }
+  }
+
   async onSettingsSubmit() {
     if (this.settingsForm.invalid) return;
     try {
@@ -810,15 +950,59 @@ export class AdminComponent implements OnDestroy {
     }
   }
 
-  async onExtendBooking(booking: Booking) {
-    const newDate = prompt('Yangi chiqish sanasini kiriting (YYYY-MM-DD):', booking.checkOut);
-    if (newDate && newDate !== booking.checkOut) {
+  async onSyncPublic() {
+    if (confirm("Barcha bronlarni ochiq ma'lumotlar bilan sinxronizatsiya qilmoqchimisiz? Bu bron qilishda bo'sh joylarni to'g'ri ko'rsatish uchun kerak.")) {
       try {
-        await this.bookingService.updateBooking(booking.id!, { checkOut: newDate });
-        alert('Muddati uzaytirildi!');
+        const count = await this.bookingService.syncPublicBookings();
+        alert(`${count} ta bron sinxronizatsiya qilindi.`);
       } catch (error) {
-        console.error('Extend booking error:', error);
+        console.error('Sync error:', error);
       }
     }
+  }
+
+  async onClearOld(type: 'rejected' | 'archive' | 'all_old') {
+    const msg = type === 'rejected' ? "Barcha rad etilganlarni o'chirmoqchimisiz?" : 
+                type === 'archive' ? "Barcha arxivlanganlarni o'chirmoqchimisiz?" : 
+                "Barcha eski bronlarni o'chirmoqchimisiz?";
+    if (confirm(msg)) {
+      try {
+        const count = await this.bookingService.clearOldBookings(type);
+        alert(`${count} ta bron o'chirildi.`);
+      } catch (error) {
+        console.error('Clear error:', error);
+      }
+    }
+  }
+
+  async onDeleteBooking(id: string) {
+    if (confirm("Ushbu bronni butunlay o'chirmoqchimisiz?")) {
+      try {
+        await this.bookingService.deleteBooking(id);
+        alert("Bron o'chirildi.");
+      } catch (error) {
+        console.error('Delete error:', error);
+      }
+    }
+  }
+
+  async confirmExtension(booking: Booking, newDate: string) {
+    if (!newDate || newDate === booking.checkOut) {
+      this.extendingBookingId.set(null);
+      return;
+    }
+
+    try {
+      await this.bookingService.updateBooking(booking.id!, { checkOut: newDate });
+      this.extendingBookingId.set(null);
+      alert('Muddati uzaytirildi!');
+    } catch (error) {
+      console.error('Extend booking error:', error);
+      alert('Xatolik yuz berdi: ' + (error instanceof Error ? error.message : 'Noma’lum xatolik'));
+    }
+  }
+
+  async onExtendBooking(booking: Booking) {
+    this.extendingBookingId.set(booking.id!);
   }
 }
