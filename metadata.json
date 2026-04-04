@@ -1,0 +1,5 @@
+{
+  "name": "Murod Ocilov Sanatoriya",
+  "description": "Professional booking platform for Murod Ocilov Sanatoriya with natural hot water treatment, multi-language support, and admin dashboard.",
+  "requestFramePermissions": ["geolocation"]
+}

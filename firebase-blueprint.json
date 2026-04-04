@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "Sanatorium room details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["2 kishilik", "3 kishilik", "Oilaviy suite"] },
+        "price": { "type": "number" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "amenities": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      },
+      "required": ["type", "price", "images"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Room booking details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "roomId": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "passport": { "type": "string" },
+        "phone": { "type": "string" },
+        "telegram": { "type": "string" },
+        "region": { "type": "string" },
+        "district": { "type": "string" },
+        "mahalla": { "type": "string" },
+        "checkIn": { "type": "string", "format": "date" },
+        "checkOut": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomId", "name", "phone", "checkIn", "checkOut", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin user details",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "viewer"] }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Collection of available rooms"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of room bookings"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Collection of admin users"
+    }
+  }
+}
