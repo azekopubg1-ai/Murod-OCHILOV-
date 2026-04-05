@@ -159,23 +159,15 @@ import { AuthService } from '../../services/auth';
               </div>
             </div>
             <div class="rounded-3xl overflow-hidden glass h-80">
-              @if (safeMapUrl()) {
-                <iframe 
-                  [src]="safeMapUrl()" 
-                  width="100%" 
-                  height="100%" 
-                  style="border:0;" 
-                  allowfullscreen="" 
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                ></iframe>
-              } @else {
-                <div class="w-full h-full flex flex-col items-center justify-center text-white/30 p-8 text-center">
-                  <mat-icon class="text-6xl mb-4">map</mat-icon>
-                  <p>Xarita manzili noto'g'ri kiritilgan yoki hali sozlanmagan.</p>
-                  <p class="text-xs mt-2">Admin panelidan Google Maps iframe URL-ni kiriting.</p>
-                </div>
-              }
+              <iframe 
+                [src]="safeMapUrl()" 
+                width="100%" 
+                height="100%" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
             </div>
           </div>
         </div>
@@ -194,7 +186,6 @@ export class HomeComponent {
   featuredRooms = computed(() => this.roomService.rooms().slice(0, 3));
   safeMapUrl = computed(() => {
     const url = this.settingsService.contactInfo().mapUrl;
-    if (!url || !url.startsWith('http')) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 }

@@ -73,8 +73,14 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
+      const firebaseError = error as { code?: string; message?: string };
+      if (firebaseError.code === 'auth/unauthorized-domain') {
+        alert('Xatolik: Ushbu domen Firebase-da ruxsat etilmagan. Iltimos, Firebase Console-da "Authorized domains" ro\'yxatiga ushbu domenni qo\'shing.');
+      } else {
+        alert('Kirishda xatolik yuz berdi: ' + (firebaseError.message || 'Noma’lum xatolik'));
+      }
     }
   }
 

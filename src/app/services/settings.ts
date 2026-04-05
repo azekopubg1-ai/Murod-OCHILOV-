@@ -29,12 +29,7 @@ export class SettingsService {
   constructor() {
     onSnapshot(doc(db, 'settings', 'contact'), (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        this.contactInfo.update(current => ({
-          ...current,
-          ...data,
-          mapUrl: data['mapUrl'] || current.mapUrl
-        }));
+        this.contactInfo.set(snapshot.data() as ContactInfo);
       }
     }, (error) => {
       console.error('Settings listener error:', error);
