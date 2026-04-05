@@ -2,13 +2,13 @@ import { Injectable, signal, inject } from '@angular/core';
 import { auth, db } from '../../firebase';
 import { 
   GoogleAuthProvider, 
-  OAuthProvider,
   signInWithPopup, 
+  signInAnonymously,
   signOut, 
   onAuthStateChanged, 
   User 
 } from 'firebase/auth';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
@@ -29,23 +29,23 @@ export class AuthService {
           if (user.email === 'shovqiddin45@gmail.com') {
             this.isAdmin.set(true);
             this.permissions.set(['all']);
-          } else {
-            // Check admins collection by email
-            const q = query(
-              collection(db, 'admins'), 
-              where('email', '==', user.email),
-              limit(1)
-            );
-            const adminSnapshot = await getDocs(q);
+          } else if (user.email) {
+            // Check admins collection by email (document ID is the email)
+            const adminDocRef = doc(db, 'admins', user.email);
+            const adminSnapshot = await getDoc(adminDocRef);
             
-            if (!adminSnapshot.empty) {
-              const adminData = adminSnapshot.docs[0].data();
+            if (adminSnapshot.exists()) {
+              const adminData = adminSnapshot.data();
               this.isAdmin.set(true);
               this.permissions.set(adminData['permissions'] || ['all']);
             } else {
               this.isAdmin.set(false);
               this.permissions.set([]);
             }
+          } else {
+            // Anonymous user or user without email
+            this.isAdmin.set(false);
+            this.permissions.set([]);
           }
           
           // Auto redirect to admin if admin logs in
@@ -71,18 +71,21 @@ export class AuthService {
     return perms.includes('all') || perms.includes(perm);
   }
 
-  async login(providerType: 'google' | 'apple' = 'google') {
+  async loginAnonymously() {
     this.isLoggingIn.set(true);
-    let provider;
-    
-    if (providerType === 'apple') {
-      provider = new OAuthProvider('apple.com');
-      // Apple specific scopes if needed
-      provider.addScope('email');
-      provider.addScope('name');
-    } else {
-      provider = new GoogleAuthProvider();
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error('Anonymous login error:', error);
+      alert('Anonim kirishda xatolik yuz berdi.');
+    } finally {
+      this.isLoggingIn.set(false);
     }
+  }
+
+  async login() {
+    this.isLoggingIn.set(true);
+    const provider = new GoogleAuthProvider();
 
     try {
       await signInWithPopup(auth, provider);

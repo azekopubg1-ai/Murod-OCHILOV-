@@ -98,18 +98,18 @@ import { CommonModule } from '@angular/common';
               ></div>
               <div class="absolute right-0 mt-2 w-48 glass rounded-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-2 space-y-1">
                 <button 
-                  (click)="auth.login('google'); isLoginMenuOpen.set(false)"
+                  (click)="auth.login(); isLoginMenuOpen.set(false)"
                   class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3"
                 >
                   <mat-icon>account_circle</mat-icon>
                   Google orqali
                 </button>
                 <button 
-                  (click)="auth.login('apple'); isLoginMenuOpen.set(false)"
+                  (click)="auth.loginAnonymously(); isLoginMenuOpen.set(false)"
                   class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3"
                 >
-                  <mat-icon>apple</mat-icon>
-                  Apple ID orqali
+                  <mat-icon>person_outline</mat-icon>
+                  Anonim kirish
                 </button>
               </div>
             }
