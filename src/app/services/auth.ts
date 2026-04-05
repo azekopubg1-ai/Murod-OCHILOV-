@@ -17,6 +17,7 @@ export class AuthService {
   isAdmin = signal<boolean>(false);
   permissions = signal<string[]>([]);
   isAuthReady = signal<boolean>(false);
+  isLoggingIn = signal<boolean>(false);
 
   constructor() {
     onAuthStateChanged(auth, async (user) => {
@@ -70,6 +71,7 @@ export class AuthService {
   }
 
   async login() {
+    this.isLoggingIn.set(true);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -81,6 +83,8 @@ export class AuthService {
       } else {
         alert('Kirishda xatolik yuz berdi: ' + (firebaseError.message || 'Noma’lum xatolik'));
       }
+    } finally {
+      this.isLoggingIn.set(false);
     }
   }
 

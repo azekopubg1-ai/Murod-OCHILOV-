@@ -263,9 +263,14 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                             <img [src]="img" class="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0" alt="Room thumbnail" referrerpolicy="no-referrer">
                           }
                         </div>
-                        <button (click)="onDeleteRoom(room.id!)" class="absolute top-4 right-4 text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all">
-                          <mat-icon>delete</mat-icon>
-                        </button>
+                        <div class="absolute top-4 right-4 flex gap-2 transition-all">
+                          <button (click)="onEditRoom(room)" class="glass text-emerald-500 hover:bg-emerald-500/20 p-2 rounded-full transition-all shadow-lg">
+                            <mat-icon>edit</mat-icon>
+                          </button>
+                          <button (click)="onDeleteRoom(room.id!)" class="glass text-rose-500 hover:bg-rose-500/20 p-2 rounded-full transition-all shadow-lg">
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </div>
                       </div>
                     }
                   </div>
@@ -425,7 +430,12 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
             <div class="space-y-6 order-first lg:order-last">
               @if (activeTab() === 'rooms') {
                 <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem]">
-                  <h3 class="font-bold mb-6">{{ t()('admin.add_room') }}</h3>
+                  <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-bold">{{ editingRoomId() ? 'Xonani tahrirlash' : t()('admin.add_room') }}</h3>
+                    @if (editingRoomId()) {
+                      <button (click)="onCancelEditRoom()" class="text-xs text-rose-500 font-bold hover:underline">Bekor qilish</button>
+                    }
+                  </div>
                   <form [formGroup]="roomForm" (ngSubmit)="onAddRoom()" class="space-y-4">
                     <input type="text" formControlName="type" placeholder="Xona turi" class="w-full glass p-4 rounded-2xl focus:outline-none">
                     <div class="grid grid-cols-2 gap-4">
@@ -491,7 +501,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       [disabled]="roomForm.invalid"
                       class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-opacity-90 transition-all disabled:opacity-50"
                     >
-                      Qo'shish
+                      {{ editingRoomId() ? "Saqlash" : "Qo'shish" }}
                     </button>
                   </form>
                 </div>
@@ -573,7 +583,8 @@ export class AdminComponent implements OnDestroy {
   searchQuery = signal('');
   isAddingAdmin = signal(false);
   extendingBookingId = signal<string | null>(null);
-  uploadingImage = signal(false);
+  editingRoomId = signal<string | null>(null);
+  uploadingImage = signal<boolean>(false);
   uploadProgress = signal(0);
 
   availablePermissions = [
@@ -907,7 +918,7 @@ export class AdminComponent implements OnDestroy {
     if (this.roomForm.invalid) return;
     const val = this.roomForm.value;
     
-    const newRoom: Room = {
+    const roomData: Room = {
       type: val.type!,
       price: val.price!,
       capacity: val.capacity!,
@@ -918,15 +929,48 @@ export class AdminComponent implements OnDestroy {
     };
 
     try {
-      await this.roomService.addRoom(newRoom);
+      if (this.editingRoomId()) {
+        await this.roomService.updateRoom(this.editingRoomId()!, roomData);
+        this.editingRoomId.set(null);
+        alert('Xona muvaffaqiyatli yangilandi!');
+      } else {
+        await this.roomService.addRoom(roomData);
+        alert('Xona muvaffaqiyatli qo\'shildi!');
+      }
       this.roomForm.reset();
       while (this.roomImagesArray.length > 3) {
         this.roomImagesArray.removeAt(this.roomImagesArray.length - 1);
       }
-      alert('Xona muvaffaqiyatli qo\'shildi!');
     } catch (error) {
-      console.error('Add room error:', error);
-      alert('Xona qo\'shishda xatolik yuz berdi.');
+      console.error('Room operation error:', error);
+      alert('Xatolik yuz berdi.');
+    }
+  }
+
+  onEditRoom(room: Room) {
+    this.editingRoomId.set(room.id!);
+    this.roomForm.patchValue({
+      type: room.type,
+      price: room.price,
+      capacity: room.capacity,
+      totalCount: room.totalCount,
+      description: room.description
+    });
+    
+    // Handle images array
+    while (this.roomImagesArray.length !== 0) {
+      this.roomImagesArray.removeAt(0);
+    }
+    room.images.forEach(img => {
+      this.roomImagesArray.push(this.fb.control(img, Validators.required));
+    });
+  }
+
+  onCancelEditRoom() {
+    this.editingRoomId.set(null);
+    this.roomForm.reset();
+    while (this.roomImagesArray.length > 3) {
+      this.roomImagesArray.removeAt(this.roomImagesArray.length - 1);
     }
   }
 

@@ -79,9 +79,10 @@ import { CommonModule } from '@angular/common';
         } @else {
           <button 
             (click)="auth.login()"
-            class="bg-white text-black px-4 md:px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition-all"
+            [disabled]="auth.isLoggingIn()"
+            class="bg-white text-black px-4 md:px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition-all disabled:opacity-50"
           >
-            Login
+            {{ auth.isLoggingIn() ? 'Kirilmoqda...' : 'Login' }}
           </button>
         }
 
