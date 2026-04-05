@@ -37,9 +37,6 @@ import { CommonModule } from '@angular/common';
                 <div class="flex items-center gap-2 text-white/50 text-sm mb-4">
                   <mat-icon class="text-emerald-500 text-base">people</mat-icon>
                   <span>{{ room.capacity }} {{ t()('rooms.person') }}</span>
-                  <span class="mx-2">|</span>
-                  <mat-icon class="text-emerald-500 text-base">hotel</mat-icon>
-                  <span>{{ room.totalCount }} {{ t()('admin.total_count') }}</span>
                 </div>
                 
                 <div class="flex flex-wrap gap-2 mb-6">

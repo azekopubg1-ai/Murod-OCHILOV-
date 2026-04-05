@@ -37,12 +37,6 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
                   <mat-icon class="text-emerald-500">hotel</mat-icon>
                   <span class="font-bold text-lg">{{ selectedRoomType() }}</span>
                 </div>
-                @if (bookingForm.get('checkIn')?.value && bookingForm.get('checkOut')?.value) {
-                  <div class="text-xs text-white/50 mt-1 flex items-center gap-2">
-                    <mat-icon class="text-xs">info</mat-icon>
-                    <span>{{ availableSpots() }} ta bo'sh joy mavjud</span>
-                  </div>
-                }
               </div>
               <button (click)="selectedRoomType.set(null)" class="text-white/50 hover:text-white">
                 <mat-icon>close</mat-icon>
@@ -56,7 +50,7 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
               @if (bookingForm.errors?.['dateRangeInvalid']) {
                 <span class="text-sm font-bold">{{ t()('booking.error.date_range') }}</span>
               } @else {
-                <span class="text-sm font-bold">Tanlangan sanalarda yetarli bo'sh joy yo'q. Faqat {{ availableSpots() }} ta joy qolgan.</span>
+                <span class="text-sm font-bold">Tanlangan sanalarda bo'sh joy yo'q.</span>
               }
             </div>
           }
