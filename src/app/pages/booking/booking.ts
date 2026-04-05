@@ -7,8 +7,17 @@ import { AuthService } from '../../services/auth';
 import { LocationService } from '../../services/location';
 import { NavbarComponent } from '../../components/navbar';
 import { MatIconModule } from '@angular/material/icon';
-import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormArray, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+
+const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const checkIn = control.get('checkIn');
+  const checkOut = control.get('checkOut');
+
+  return checkIn && checkOut && checkIn.value && checkOut.value && new Date(checkOut.value) <= new Date(checkIn.value) 
+    ? { dateRangeInvalid: true } 
+    : null;
+};
 
 @Component({
   selector: 'app-booking',
@@ -44,7 +53,11 @@ import { CommonModule } from '@angular/common';
           @if (bookingForm.get('checkIn')?.value && bookingForm.get('checkOut')?.value && !isRoomAvailable()) {
             <div class="bg-rose-500/20 text-rose-500 p-4 rounded-2xl mb-8 flex items-center gap-3">
               <mat-icon>warning</mat-icon>
-              <span class="text-sm font-bold">Tanlangan sanalarda yetarli bo'sh joy yo'q. Faqat {{ availableSpots() }} ta joy qolgan.</span>
+              @if (bookingForm.errors?.['dateRangeInvalid']) {
+                <span class="text-sm font-bold">{{ t()('booking.error.date_range') }}</span>
+              } @else {
+                <span class="text-sm font-bold">Tanlangan sanalarda yetarli bo'sh joy yo'q. Faqat {{ availableSpots() }} ta joy qolgan.</span>
+              }
             </div>
           }
 
@@ -267,7 +280,7 @@ export class BookingComponent implements OnInit {
     mahalla: ['', Validators.required],
     checkIn: ['', Validators.required],
     checkOut: ['', Validators.required]
-  });
+  }, { validators: [dateRangeValidator] });
 
   get peopleFormArray() {
     return this.bookingForm.get('people') as FormArray;
