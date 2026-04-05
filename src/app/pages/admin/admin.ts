@@ -81,6 +81,11 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                         <input id="settings-instagram" type="text" formControlName="instagram" class="w-full glass p-4 rounded-2xl">
                       </div>
                     </div>
+                    <div class="space-y-2">
+                      <label for="settings-map" class="text-sm text-white/50">Xarita (Google Maps Iframe URL)</label>
+                      <input id="settings-map" type="text" formControlName="mapUrl" class="w-full glass p-4 rounded-2xl" placeholder="https://www.google.com/maps/embed?pb=...">
+                      <p class="text-[10px] text-white/30">Google Maps-dan "Share" -> "Embed a map" bo'limidan src="..." ichidagi URL-ni oling.</p>
+                    </div>
                     <button type="submit" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20">
                       Saqlash
                     </button>
@@ -106,9 +111,8 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
 
                   @if (isAddingAdmin()) {
                     <form [formGroup]="adminForm" (ngSubmit)="onAddAdmin()" class="glass p-6 rounded-2xl space-y-4">
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" formControlName="uid" placeholder="User UID" class="glass p-3 rounded-xl text-sm">
-                        <input type="email" formControlName="email" placeholder="Email" class="glass p-3 rounded-xl text-sm">
+                      <div class="grid grid-cols-1 gap-4">
+                        <input type="email" formControlName="email" placeholder="Google Account Email" class="glass p-3 rounded-xl text-sm">
                       </div>
                       <div class="space-y-2">
                         <span class="text-xs font-bold text-white/30 uppercase tracking-widest">Ruxsatlar</span>
@@ -128,18 +132,17 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                   }
 
                   <div class="space-y-4">
-                    @for (admin of adminService.admins(); track admin.uid) {
+                    @for (admin of adminService.admins(); track admin.email) {
                       <div class="glass p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                         <div>
                           <div class="font-bold">{{ admin.email }}</div>
-                          <div class="text-xs text-white/30 mt-1">UID: {{ admin.uid }}</div>
                           <div class="flex flex-wrap gap-1 mt-2">
                             @for (p of admin.permissions; track p) {
                               <span class="bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded text-[10px] uppercase font-bold">{{ p }}</span>
                             }
                           </div>
                         </div>
-                        <button (click)="adminService.removeAdmin(admin.uid)" class="text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all self-end md:self-auto">
+                        <button (click)="adminService.removeAdmin(admin.email)" class="text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all self-end md:self-auto">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -614,7 +617,6 @@ export class AdminComponent implements OnDestroy {
   }
 
   adminForm = this.fb.group({
-    uid: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     permissions: [[] as string[]]
   });
@@ -624,7 +626,6 @@ export class AdminComponent implements OnDestroy {
     const val = this.adminForm.value;
     try {
       await this.adminService.addAdmin({
-        uid: val.uid!,
         email: val.email!,
         permissions: val.permissions || ['all'],
         createdAt: new Date().toISOString()
@@ -681,7 +682,8 @@ export class AdminComponent implements OnDestroy {
     email: [this.settingsService.contactInfo().email, [Validators.required, Validators.email]],
     address: [this.settingsService.contactInfo().address, Validators.required],
     telegram: [this.settingsService.contactInfo().telegram],
-    instagram: [this.settingsService.contactInfo().instagram]
+    instagram: [this.settingsService.contactInfo().instagram],
+    mapUrl: [this.settingsService.contactInfo().mapUrl, Validators.required]
   });
 
   get roomImagesArray() {

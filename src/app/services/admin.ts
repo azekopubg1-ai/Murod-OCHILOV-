@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 export interface AdminUser {
-  uid: string;
+  id?: string;
   email: string;
   permissions: string[];
   createdAt: string;
@@ -28,7 +28,7 @@ export class AdminService {
     const q = query(collection(db, 'admins'));
     this.unsubscribe = onSnapshot(q, (snapshot) => {
       const admins = snapshot.docs.map(doc => ({
-        uid: doc.id,
+        id: doc.id,
         ...doc.data()
       } as AdminUser));
       this.admins.set(admins);
@@ -42,19 +42,22 @@ export class AdminService {
     }
   }
 
-  async addAdmin(admin: AdminUser) {
-    await setDoc(doc(db, 'admins', admin.uid), {
+  async addAdmin(admin: Partial<AdminUser>) {
+    if (!admin.email) return;
+    // Use email as doc id, replacing characters that might be problematic if needed
+    // but Firestore allows @ and .
+    await setDoc(doc(db, 'admins', admin.email), {
       email: admin.email,
-      permissions: admin.permissions,
-      createdAt: admin.createdAt
+      permissions: admin.permissions || ['all'],
+      createdAt: admin.createdAt || new Date().toISOString()
     });
   }
 
-  async removeAdmin(uid: string) {
-    await deleteDoc(doc(db, 'admins', uid));
+  async removeAdmin(email: string) {
+    await deleteDoc(doc(db, 'admins', email));
   }
 
-  async updatePermissions(uid: string, permissions: string[]) {
-    await setDoc(doc(db, 'admins', uid), { permissions }, { merge: true });
+  async updatePermissions(email: string, permissions: string[]) {
+    await setDoc(doc(db, 'admins', email), { permissions }, { merge: true });
   }
 }

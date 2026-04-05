@@ -9,7 +9,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.email == "shovqiddin45@gmail.com" ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
       );
     }
 
@@ -42,7 +42,7 @@ service cloud.firestore {
 
     // Admins: Users can read their own admin status, admins can read/write all
     match /admins/{adminId} {
-      allow read: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
+      allow read: if isAuthenticated() && (request.auth.token.email == adminId || isAdmin());
       allow write: if isAdmin();
     }
   }

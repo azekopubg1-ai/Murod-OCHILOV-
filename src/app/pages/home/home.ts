@@ -1,4 +1,5 @@
 import { Component, inject, computed } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { TranslationService } from '../../services/translation';
 import { SettingsService } from '../../services/settings';
@@ -159,7 +160,7 @@ import { AuthService } from '../../services/auth';
             </div>
             <div class="rounded-3xl overflow-hidden glass h-80">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3012.3456789!2d71.6!3d41.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDHCsDAwJzAwLjAiTiA3McKwMzYnMDAuMCJF!5e0!3m2!1sen!2suz!4v1234567890" 
+                [src]="safeMapUrl()" 
                 width="100%" 
                 height="100%" 
                 style="border:0;" 
@@ -179,7 +180,12 @@ export class HomeComponent {
   settingsService = inject(SettingsService);
   roomService = inject(RoomService);
   auth = inject(AuthService);
+  sanitizer = inject(DomSanitizer);
   t = computed(() => this.ts.t());
 
   featuredRooms = computed(() => this.roomService.rooms().slice(0, 3));
+  safeMapUrl = computed(() => {
+    const url = this.settingsService.contactInfo().mapUrl;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
 }

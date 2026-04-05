@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, 
   User 
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
@@ -23,16 +23,27 @@ export class AuthService {
       this.user.set(user);
       if (user) {
         try {
-          const adminDoc = await getDoc(doc(db, 'admins', user.uid));
-          if (adminDoc.exists()) {
-            this.isAdmin.set(true);
-            this.permissions.set(adminDoc.data()['permissions'] || ['all']);
-          } else if (user.email === 'shovqiddin45@gmail.com') {
+          // First check super admin
+          if (user.email === 'shovqiddin45@gmail.com') {
             this.isAdmin.set(true);
             this.permissions.set(['all']);
           } else {
-            this.isAdmin.set(false);
-            this.permissions.set([]);
+            // Check admins collection by email
+            const q = query(
+              collection(db, 'admins'), 
+              where('email', '==', user.email),
+              limit(1)
+            );
+            const adminSnapshot = await getDocs(q);
+            
+            if (!adminSnapshot.empty) {
+              const adminData = adminSnapshot.docs[0].data();
+              this.isAdmin.set(true);
+              this.permissions.set(adminData['permissions'] || ['all']);
+            } else {
+              this.isAdmin.set(false);
+              this.permissions.set([]);
+            }
           }
           
           // Auto redirect to admin if admin logs in
