@@ -10,9 +10,19 @@ import { CommonModule } from '@angular/common';
   imports: [RouterLink, MatIconModule, CommonModule],
   template: `
     <nav class="fixed top-0 left-0 right-0 z-50 glass m-4 rounded-2xl p-4 flex items-center justify-between">
-      <div class="flex items-center gap-2 cursor-pointer" routerLink="/">
-        <mat-icon class="text-emerald-500">spa</mat-icon>
-        <span class="font-display font-bold text-lg md:text-xl tracking-tight">Murod Ocilov</span>
+      <div class="flex items-center gap-3 cursor-pointer" routerLink="/">
+        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden glass flex-shrink-0">
+          <img 
+            src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0209141568.firebasestorage.app/o/logo%2Flogo.png?alt=media&token=86699478-6629-4560-8961-766994786629" 
+            class="w-full h-full object-contain" 
+            alt="Murod Ochilov Logo"
+            referrerpolicy="no-referrer"
+          >
+        </div>
+        <div class="flex flex-col">
+          <span class="font-display font-bold text-base md:text-lg tracking-tight leading-none">Murod OCHILOV</span>
+          <span class="text-[8px] md:text-[10px] text-white/50 font-medium uppercase tracking-tighter">Sanatoryasi</span>
+        </div>
       </div>
       
       <!-- Desktop Menu -->
@@ -77,13 +87,43 @@ import { CommonModule } from '@angular/common';
             <mat-icon>logout</mat-icon>
           </button>
         } @else {
-          <button 
-            (click)="auth.login()"
-            [disabled]="auth.isLoggingIn()"
-            class="bg-white text-black px-4 md:px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition-all disabled:opacity-50"
-          >
-            {{ auth.isLoggingIn() ? 'Kirilmoqda...' : 'Login' }}
-          </button>
+          <div class="relative">
+            <button 
+              (click)="isLoginMenuOpen.set(!isLoginMenuOpen())"
+              [disabled]="auth.isLoggingIn()"
+              class="bg-white text-black px-4 md:px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {{ auth.isLoggingIn() ? '...' : 'Login' }}
+              <mat-icon class="text-sm">expand_more</mat-icon>
+            </button>
+
+            @if (isLoginMenuOpen()) {
+              <div 
+                class="fixed inset-0 z-40" 
+                (click)="isLoginMenuOpen.set(false)"
+                (keydown.escape)="isLoginMenuOpen.set(false)"
+                role="button"
+                tabindex="0"
+                aria-label="Close Menu"
+              ></div>
+              <div class="absolute right-0 mt-2 w-48 glass rounded-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-2 space-y-1">
+                <button 
+                  (click)="auth.login('google'); isLoginMenuOpen.set(false)"
+                  class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3"
+                >
+                  <mat-icon>account_circle</mat-icon>
+                  Google orqali
+                </button>
+                <button 
+                  (click)="auth.login('apple'); isLoginMenuOpen.set(false)"
+                  class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3"
+                >
+                  <mat-icon>apple</mat-icon>
+                  Apple ID orqali
+                </button>
+              </div>
+            }
+          </div>
         }
 
         <!-- Mobile Menu Toggle -->
@@ -123,4 +163,5 @@ export class NavbarComponent {
   languages: Language[] = ['UZ', 'UZ_KR', 'RU', 'EN', 'QQ'];
   isMenuOpen = signal(false);
   isLangMenuOpen = signal(false);
+  isLoginMenuOpen = signal(false);
 }

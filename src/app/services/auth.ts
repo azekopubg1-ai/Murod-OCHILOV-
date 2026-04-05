@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { auth, db } from '../../firebase';
 import { 
   GoogleAuthProvider, 
+  OAuthProvider,
   signInWithPopup, 
   signOut, 
   onAuthStateChanged, 
@@ -70,9 +71,19 @@ export class AuthService {
     return perms.includes('all') || perms.includes(perm);
   }
 
-  async login() {
+  async login(providerType: 'google' | 'apple' = 'google') {
     this.isLoggingIn.set(true);
-    const provider = new GoogleAuthProvider();
+    let provider;
+    
+    if (providerType === 'apple') {
+      provider = new OAuthProvider('apple.com');
+      // Apple specific scopes if needed
+      provider.addScope('email');
+      provider.addScope('name');
+    } else {
+      provider = new GoogleAuthProvider();
+    }
+
     try {
       await signInWithPopup(auth, provider);
     } catch (error: unknown) {
@@ -80,6 +91,8 @@ export class AuthService {
       const firebaseError = error as { code?: string; message?: string };
       if (firebaseError.code === 'auth/unauthorized-domain') {
         alert('Xatolik: Ushbu domen Firebase-da ruxsat etilmagan. Iltimos, Firebase Console-da "Authorized domains" ro\'yxatiga ushbu domenni qo\'shing.');
+      } else if (firebaseError.code === 'auth/operation-not-allowed') {
+        alert('Xatolik: Ushbu kirish usuli (Apple/Google) Firebase Console-da yoqilmagan.');
       } else {
         alert('Kirishda xatolik yuz berdi: ' + (firebaseError.message || 'Noma’lum xatolik'));
       }
