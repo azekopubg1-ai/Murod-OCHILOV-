@@ -10,19 +10,9 @@ import { CommonModule } from '@angular/common';
   imports: [RouterLink, MatIconModule, CommonModule],
   template: `
     <nav class="fixed top-0 left-0 right-0 z-50 glass m-4 rounded-2xl p-4 flex items-center justify-between">
-      <div class="flex items-center gap-3 cursor-pointer" routerLink="/">
-        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden glass flex-shrink-0">
-          <img 
-            src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0209141568.firebasestorage.app/o/logo%2Flogo.png?alt=media&token=86699478-6629-4560-8961-766994786629" 
-            class="w-full h-full object-contain" 
-            alt="Murod Ochilov Logo"
-            referrerpolicy="no-referrer"
-          >
-        </div>
-        <div class="flex flex-col">
-          <span class="font-display font-bold text-base md:text-lg tracking-tight leading-none">Murod OCHILOV</span>
-          <span class="text-[8px] md:text-[10px] text-white/50 font-medium uppercase tracking-tighter">Sanatoryasi</span>
-        </div>
+      <div class="flex items-center gap-2 cursor-pointer" routerLink="/">
+        <mat-icon class="text-emerald-500">spa</mat-icon>
+        <span class="font-display font-bold text-lg md:text-xl tracking-tight">Murod Ocilov</span>
       </div>
       
       <!-- Desktop Menu -->
