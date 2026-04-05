@@ -83,10 +83,13 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                     </div>
                     <div class="space-y-2">
                       <label for="settings-map" class="text-sm text-white/50">Xarita (Google Maps Iframe URL)</label>
-                      <input id="settings-map" type="text" formControlName="mapUrl" class="w-full glass p-4 rounded-2xl" placeholder="https://www.google.com/maps/embed?pb=...">
+                      <input id="settings-map" type="text" formControlName="mapUrl" (input)="onMapUrlInput($event)" class="w-full glass p-4 rounded-2xl" placeholder="https://www.google.com/maps/embed?pb=...">
+                      @if (settingsForm.get('mapUrl')?.errors?.['pattern']) {
+                        <p class="text-[10px] text-rose-500 font-bold">Xato: URL 'https://www.google.com/maps/embed' bilan boshlanishi kerak.</p>
+                      }
                       <p class="text-[10px] text-white/30">Google Maps-dan "Share" -> "Embed a map" bo'limidan src="..." ichidagi URL-ni oling.</p>
                     </div>
-                    <button type="submit" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20">
+                    <button type="submit" [disabled]="settingsForm.invalid" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
                       Saqlash
                     </button>
                   </form>
@@ -683,7 +686,7 @@ export class AdminComponent implements OnDestroy {
     address: [this.settingsService.contactInfo().address, Validators.required],
     telegram: [this.settingsService.contactInfo().telegram],
     instagram: [this.settingsService.contactInfo().instagram],
-    mapUrl: [this.settingsService.contactInfo().mapUrl, Validators.required]
+    mapUrl: [this.settingsService.contactInfo().mapUrl, [Validators.required, Validators.pattern(/^https:\/\/www\.google\.com\/maps\/embed.*/)]]
   });
 
   get roomImagesArray() {
@@ -949,6 +952,17 @@ export class AdminComponent implements OnDestroy {
       alert('Kontakt ma’lumotlari saqlandi!');
     } catch (error) {
       console.error('Settings update error:', error);
+    }
+  }
+
+  onMapUrlInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    if (value.includes('<iframe')) {
+      const match = value.match(/src="([^"]+)"/);
+      if (match && match[1]) {
+        this.settingsForm.patchValue({ mapUrl: match[1] });
+      }
     }
   }
 
