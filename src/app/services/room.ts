@@ -13,11 +13,11 @@ import {
 
 export interface Room {
   id?: string;
-  type: string;
+  type: Record<string, string>;
   price: number;
   images: string[];
-  amenities: string[];
-  description: string;
+  amenities: Record<string, string[]>;
+  description: Record<string, string>;
   capacity: number;
   totalCount: number;
 }

@@ -44,6 +44,9 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.status.archive': 'Arxiv (Tugagan)',
     'booking.status.rejected': 'Rad etilgan',
     'booking.error.date_range': 'Chiqish sanasi kirish sanasidan keyin bo\'lishi kerak',
+    'booking.no_availability': 'Tanlangan sanalarda bo\'sh joy yo\'q',
+    'booking.busy_dates': 'Band bo\'lgan kunlar',
+    'booking.available_spots': 'Bo\'sh joylar',
     'admin.dashboard': 'Admin Dashboard',
     'admin.rooms': 'Xonalar boshqaruvi',
     'admin.bookings': 'Bronlar ro‘yxati',
@@ -102,7 +105,10 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.status.active': 'Фаол (Ҳозирда)',
     'booking.status.archive': 'Архив (Тугаган)',
     'booking.status.rejected': 'Рад этилган',
-    'booking.error.date_range': 'Чиқиш санаси кириш санасидан кейин бўлиши керак',
+    'booking.error.date_range': 'Чиқиш санаси кириш санасиdan кейин бўлиши керак',
+    'booking.no_availability': 'Танланган саналарда бўш жой йўқ',
+    'booking.busy_dates': 'Банд бўлган кунлар',
+    'booking.available_spots': 'Бўш жойлар',
     'admin.dashboard': 'Админ Дашбоард',
     'admin.rooms': 'Хоналар бошқаруви',
     'admin.bookings': 'Бронлар рўйхати',
@@ -162,6 +168,9 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.status.archive': 'Архив (Завершено)',
     'booking.status.rejected': 'Отклонено',
     'booking.error.date_range': 'Дата выезда должна быть позже даты заезда',
+    'booking.no_availability': 'На выбранные даты нет свободных мест',
+    'booking.busy_dates': 'Занятые даты',
+    'booking.available_spots': 'Свободные места',
     'admin.dashboard': 'Панель администратора',
     'admin.rooms': 'Управление номерами',
     'admin.bookings': 'Список бронирований',
@@ -221,6 +230,9 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.status.archive': 'Archive (Finished)',
     'booking.status.rejected': 'Rejected',
     'booking.error.date_range': 'Check-out date must be after check-in date',
+    'booking.no_availability': 'No availability for selected dates',
+    'booking.busy_dates': 'Busy dates',
+    'booking.available_spots': 'Available spots',
     'admin.dashboard': 'Admin Dashboard',
     'admin.rooms': 'Room Management',
     'admin.bookings': 'Booking List',
@@ -280,6 +292,9 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.status.archive': 'Arxiv (Tawsılǵan)',
     'booking.status.rejected': 'Biykar etilgen',
     'booking.error.date_range': 'Shıǵıw sánesi kirisiw sánesinen keyin bolıwı kerek',
+    'booking.no_availability': 'Saylanǵan sánelerde bos orın joq',
+    'booking.busy_dates': 'Bánt bolǵan kúnler',
+    'booking.available_spots': 'Bos orınlar',
     'admin.dashboard': 'Admin Dashboard',
     'admin.rooms': 'Xonalar basqarıwı',
     'admin.bookings': 'Bronlar dizimi',
@@ -320,4 +335,14 @@ export class TranslationService {
     const lang = this.currentLang();
     return (key: string) => translations[lang][key] || key;
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  translateObject(obj: Record<string, unknown> | string | unknown[] | undefined | null): any {
+    if (!obj) return '';
+    if (typeof obj === 'string') return obj;
+    if (Array.isArray(obj)) return obj;
+    const lang = this.currentLang();
+    const record = obj as Record<string, unknown>;
+    return record[lang] || record['UZ'] || Object.values(record)[0] || '';
+  }
 }

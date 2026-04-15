@@ -1,19 +1,22 @@
-import { Component, inject, signal, computed, OnDestroy, effect } from '@angular/core';
-import { TranslationService } from '../../services/translation';
+import { Component, inject, signal, computed, OnDestroy, effect, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { TranslationService, Language } from '../../services/translation';
 import { RoomService, Room } from '../../services/room';
 import { BookingService, Booking } from '../../services/booking';
 import { AuthService } from '../../services/auth';
 import { LocationService } from '../../services/location';
-import { SettingsService, ContactInfo } from '../../services/settings';
+import { SettingsService, ContactInfo, SocialLink } from '../../services/settings';
 import { AdminService } from '../../services/admin';
+import { NotificationService } from '../../services/notification';
 import { NavbarComponent } from '../../components/navbar';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebase';
+import { GoogleGenAI } from "@google/genai";
 
-type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'rooms' | 'settings' | 'admins';
+type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'rooms' | 'settings' | 'footer' | 'admins';
 
 @Component({
   selector: 'app-admin',
@@ -55,7 +58,9 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
               
               @if (activeTab() === 'settings') {
                 <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] space-y-8">
-                  <h2 class="text-xl md:text-2xl font-bold">{{ t()('admin.contact_settings') }}</h2>
+                  <div class="flex items-center justify-between">
+                    <h2 class="text-xl md:text-2xl font-bold">{{ t()('admin.contact_settings') }}</h2>
+                  </div>
                   <form [formGroup]="settingsForm" (ngSubmit)="onSettingsSubmit()" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="space-y-2">
@@ -67,27 +72,33 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                         <input id="settings-email" type="email" formControlName="email" class="w-full glass p-4 rounded-2xl">
                       </div>
                     </div>
-                    <div class="space-y-2">
-                      <label for="settings-address" class="text-sm text-white/50">Manzil</label>
-                      <input id="settings-address" type="text" formControlName="address" class="w-full glass p-4 rounded-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="space-y-2" formGroupName="siteName">
+                        <label for="settings-sitename" class="text-sm text-white/50">Sayt nomi</label>
+                        <input id="settings-sitename" type="text" formControlName="UZ" class="w-full glass p-4 rounded-2xl" placeholder="O'zbek tilida kiriting">
+                      </div>
+                      <div class="space-y-2" formGroupName="siteSubtitle">
+                        <label for="settings-sitesubtitle" class="text-sm text-white/50">Sayt subtitri</label>
+                        <input id="settings-sitesubtitle" type="text" formControlName="UZ" class="w-full glass p-4 rounded-2xl" placeholder="O'zbek tilida kiriting">
+                      </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div class="space-y-2">
-                        <label for="settings-telegram" class="text-sm text-white/50">Telegram</label>
-                        <input id="settings-telegram" type="text" formControlName="telegram" class="w-full glass p-4 rounded-2xl">
+                      <div class="space-y-2" formGroupName="address">
+                        <label for="settings-address" class="text-sm text-white/50">Manzil</label>
+                        <input id="settings-address" type="text" formControlName="UZ" class="w-full glass p-4 rounded-2xl" placeholder="O'zbek tilida kiriting">
                       </div>
                       <div class="space-y-2">
-                        <label for="settings-instagram" class="text-sm text-white/50">Instagram</label>
-                        <input id="settings-instagram" type="text" formControlName="instagram" class="w-full glass p-4 rounded-2xl">
+                        <label for="settings-map" class="text-sm text-white/50">Xarita (Google Maps Iframe URL)</label>
+                        <input id="settings-map" type="text" formControlName="mapUrl" class="w-full glass p-4 rounded-2xl" placeholder="https://www.google.com/maps/embed?pb=...">
                       </div>
                     </div>
-                    <div class="space-y-2">
-                      <label for="settings-map" class="text-sm text-white/50">Xarita (Google Maps Iframe URL)</label>
-                      <input id="settings-map" type="text" formControlName="mapUrl" class="w-full glass p-4 rounded-2xl" placeholder="https://www.google.com/maps/embed?pb=...">
-                      <p class="text-[10px] text-white/30">Google Maps-dan "Share" -> "Embed a map" bo'limidan src="..." ichidagi URL-ni oling.</p>
-                    </div>
-                    <button type="submit" [disabled]="settingsForm.invalid" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                      Saqlash
+                    <button type="submit" [disabled]="settingsForm.invalid || isTranslating()" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                      @if (isTranslating()) {
+                        <mat-icon class="animate-spin">sync</mat-icon>
+                        Tarjima qilinmoqda...
+                      } @else {
+                        Saqlash
+                      }
                     </button>
                   </form>
 
@@ -99,6 +110,107 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       Bo'sh joylarni sinxronizatsiya qilish
                     </button>
                   </div>
+                </div>
+              } @else if (activeTab() === 'footer') {
+                <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] space-y-8">
+                  <h2 class="text-xl md:text-2xl font-bold">Footer sozlamalari</h2>
+                  <form [formGroup]="settingsForm" (ngSubmit)="onSettingsSubmit()" class="space-y-8">
+                    
+                    <!-- Footer Description -->
+                    <div class="space-y-4">
+                      <h3 class="font-bold text-emerald-500 text-sm uppercase tracking-widest border-b border-white/5 pb-2">Footer tavsifi</h3>
+                      <div class="space-y-2" formGroupName="footerDescription">
+                        <label for="footer-desc-uz" class="text-xs font-bold text-white/30">O'zbek tilida (Boshqa tillarga avtomatik tarjima qilinadi)</label>
+                        <textarea id="footer-desc-uz" formControlName="UZ" class="w-full glass p-4 rounded-2xl h-24 text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none" placeholder="Tavsifni o'zbek tilida kiriting"></textarea>
+                      </div>
+                    </div>
+
+                    <!-- Copyright -->
+                    <div class="space-y-4 pt-6 border-t border-white/5">
+                      <h3 class="font-bold text-emerald-500 text-sm uppercase tracking-widest border-b border-white/5 pb-2">Copyright matni</h3>
+                      <div class="space-y-2" formGroupName="copyright">
+                        <label for="copyright-uz" class="text-xs font-bold text-white/30">O'zbek tilida (Boshqa tillarga avtomatik tarjima qilinadi)</label>
+                        <input id="copyright-uz" type="text" formControlName="UZ" class="w-full glass p-4 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none" placeholder="Copyright matnini o'zbek tilida kiriting">
+                      </div>
+                    </div>
+
+                    <!-- Footer Images -->
+                    <div class="space-y-4 pt-6 border-t border-white/5">
+                      <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                        <h3 class="font-bold text-emerald-500 text-sm uppercase tracking-widest">Footer rasmlari (2-12 ta)</h3>
+                        <div class="relative bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer hover:bg-emerald-500/20 transition-all">
+                          <input type="file" (change)="onFooterFileSelected($event)" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                          <mat-icon class="text-sm">add_a_photo</mat-icon> Yuklash
+                        </div>
+                      </div>
+                      
+                      <div formArrayName="footerImages" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @for (img of footerImagesArray.controls; track $index) {
+                          <div class="relative aspect-video rounded-xl overflow-hidden glass group">
+                            <img [src]="img.value" class="w-full h-full object-cover" alt="Footer image" referrerpolicy="no-referrer">
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button type="button" (click)="removeFooterImage($index)" class="bg-rose-500 text-white p-2 rounded-full shadow-lg">
+                                <mat-icon class="text-sm">delete</mat-icon>
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                      @if (footerImagesArray.length < 2) {
+                        <p class="text-[10px] text-amber-500 font-medium italic">Kamida 2 ta rasm bo'lishi tavsiya etiladi.</p>
+                      }
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="space-y-4 pt-6 border-t border-white/5">
+                      <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                        <h3 class="font-bold text-emerald-500 text-sm uppercase tracking-widest">Ijtimoiy tarmoqlar</h3>
+                        <button type="button" (click)="addSocialLink()" class="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                          <mat-icon class="text-sm">add</mat-icon> Qo'shish
+                        </button>
+                      </div>
+                      
+                      <div formArrayName="socialLinks" class="space-y-3">
+                        @for (link of socialLinksArray.controls; track $index) {
+                          <div [formGroupName]="$index" class="glass p-4 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center group">
+                            <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+                              <div class="space-y-1">
+                                <label [for]="'platform-' + $index" class="text-[10px] text-white/30 uppercase font-bold">Platforma</label>
+                                <input [id]="'platform-' + $index" formControlName="platform" placeholder="Platforma" class="w-full bg-white/5 p-2 rounded-lg text-sm focus:bg-white/10 outline-none">
+                              </div>
+                              <div class="space-y-1">
+                                <label [for]="'url-' + $index" class="text-[10px] text-white/30 uppercase font-bold">Havola (URL)</label>
+                                <input [id]="'url-' + $index" formControlName="url" placeholder="Havola (URL)" class="w-full bg-white/5 p-2 rounded-lg text-sm focus:bg-white/10 outline-none">
+                              </div>
+                              <div class="space-y-1">
+                                <label [for]="'icon-' + $index" class="text-[10px] text-white/30 uppercase font-bold">Ikonka</label>
+                                <select [id]="'icon-' + $index" formControlName="icon" class="w-full bg-white/5 p-2 rounded-lg text-sm focus:bg-white/10 outline-none appearance-none">
+                                  <option value="telegram">Telegram</option>
+                                  <option value="camera_alt">Instagram</option>
+                                  <option value="play_circle">YouTube</option>
+                                  <option value="facebook">Facebook</option>
+                                  <option value="public">Veb-sayt</option>
+                                  <option value="link">Boshqa</option>
+                                </select>
+                              </div>
+                            </div>
+                            <button type="button" (click)="removeSocialLink($index)" class="text-rose-500 hover:bg-rose-500/10 p-2 rounded-lg transition-all self-end md:self-center">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <button type="submit" [disabled]="settingsForm.invalid || isTranslating()" class="w-full bg-emerald-500 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2">
+                      @if (isTranslating()) {
+                        <mat-icon class="animate-spin">sync</mat-icon>
+                        Tarjima qilinmoqda...
+                      } @else {
+                        Saqlash
+                      }
+                    </button>
+                  </form>
                 </div>
               } @else if (activeTab() === 'admins') {
                 <div class="glass p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] space-y-8">
@@ -191,7 +303,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       <select formControlName="roomType" class="glass p-4 rounded-2xl appearance-none">
                         <option value="" disabled selected>Xona turi</option>
                         @for (room of roomService.rooms(); track room.id) {
-                          <option [value]="room.type">{{ room.type }}</option>
+                          <option [value]="ts.translateObject(room.type)">{{ ts.translateObject(room.type) }}</option>
                         }
                       </select>
                     </div>
@@ -251,13 +363,13 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-4">
                     @for (room of roomService.rooms(); track room.id) {
                       <div class="glass p-5 md:p-6 rounded-[2rem] md:rounded-3xl relative group">
-                        <div class="font-bold text-lg md:text-xl mb-1">{{ room.type }}</div>
+                        <div class="font-bold text-lg md:text-xl mb-1">{{ ts.translateObject(room.type) }}</div>
                         <div class="text-emerald-400 font-bold mb-2 text-sm md:text-base">{{ room.price.toLocaleString() }} UZS</div>
                         <div class="flex gap-4 text-[10px] md:text-xs text-white/50 mb-4">
                           <span>{{ room.capacity }} kishilik</span>
                           <span>{{ room.totalCount }} ta xona</span>
                         </div>
-                        <p class="text-xs md:text-sm text-white/50 line-clamp-2 mb-4">{{ room.description }}</p>
+                        <p class="text-xs md:text-sm text-white/50 line-clamp-2 mb-4">{{ ts.translateObject(room.description) }}</p>
                         <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                           @for (img of room.images; track img) {
                             <img [src]="img" class="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover flex-shrink-0" alt="Room thumbnail" referrerpolicy="no-referrer">
@@ -294,7 +406,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4">
                     @for (room of roomService.rooms(); track room.id) {
                       <div class="glass p-3 md:p-4 rounded-2xl border-white/5">
-                        <div class="text-[9px] md:text-[10px] uppercase tracking-widest text-white/30 mb-1">{{ room.type }}</div>
+                        <div class="text-[9px] md:text-[10px] uppercase tracking-widest text-white/30 mb-1">{{ ts.translateObject(room.type) }}</div>
                         <div class="flex items-end justify-between">
                           <span class="text-base md:text-lg font-bold">{{ room.totalCount }}</span>
                           <span class="text-[9px] md:text-[10px] text-white/50">{{ room.capacity }} kishilik</span>
@@ -344,7 +456,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                             <select #roomSelect class="glass p-3 rounded-xl text-sm appearance-none">
                               <option value="">Xona tanlanmagan</option>
                               @for (room of roomService.rooms(); track room.id) {
-                                <option [value]="room.id">{{ room.type }} ({{ room.price.toLocaleString() }})</option>
+                                <option [value]="room.id">{{ ts.translateObject(room.type) }} ({{ room.price.toLocaleString() }})</option>
                               }
                             </select>
                           </div>
@@ -437,13 +549,23 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                     }
                   </div>
                   <form [formGroup]="roomForm" (ngSubmit)="onAddRoom()" class="space-y-4">
-                    <input type="text" formControlName="type" placeholder="Xona turi" class="w-full glass p-4 rounded-2xl focus:outline-none">
+                    <div class="space-y-2" formGroupName="type">
+                      <label for="room-type" class="text-xs text-white/50">Xona turi (O'zbek tilida)</label>
+                      <input id="room-type" type="text" formControlName="UZ" class="w-full glass p-4 rounded-2xl focus:outline-none" placeholder="Masalan: 2 kishilik lyuks">
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                       <input type="number" formControlName="price" placeholder="Narx" class="w-full glass p-4 rounded-2xl focus:outline-none">
                       <input type="number" formControlName="capacity" [placeholder]="t()('admin.capacity')" class="w-full glass p-4 rounded-2xl focus:outline-none">
                     </div>
                     <input type="number" formControlName="totalCount" [placeholder]="t()('admin.total_count')" class="w-full glass p-4 rounded-2xl focus:outline-none">
-                    <textarea formControlName="description" placeholder="Tavsif" class="w-full glass p-4 rounded-2xl focus:outline-none h-24"></textarea>
+                    <div class="space-y-2" formGroupName="description">
+                      <label for="room-desc" class="text-xs text-white/50">Tavsif (O'zbek tilida)</label>
+                      <textarea id="room-desc" formControlName="UZ" class="w-full glass p-4 rounded-2xl focus:outline-none h-24" placeholder="Xona haqida batafsil ma'lumot..."></textarea>
+                    </div>
+                    <div class="space-y-2" formGroupName="amenities">
+                      <label for="room-amenities" class="text-xs text-white/50">Qulayliklar (O'zbek tilida, vergul bilan ajrating)</label>
+                      <input id="room-amenities" type="text" formControlName="UZ" placeholder="WiFi, TV, Konditsioner, ..." class="w-full glass p-4 rounded-2xl focus:outline-none">
+                    </div>
                     
                     <div class="space-y-2">
                       <label for="room-images" class="text-xs font-bold text-white/30">{{ t()('admin.images') }}</label>
@@ -489,7 +611,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                         }
                       </div>
                       
-                      @if (roomImagesArray.length < 10) {
+                      @if (roomImagesArray.length < 12) {
                         <button (click)="addImage()" type="button" class="w-full glass py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-white/5 transition-all mt-2">
                           <mat-icon class="text-sm">add_link</mat-icon> URL orqali rasm qo'shish
                         </button>
@@ -498,10 +620,15 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
 
                     <button 
                       type="submit" 
-                      [disabled]="roomForm.invalid"
-                      class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-opacity-90 transition-all disabled:opacity-50"
+                      [disabled]="roomForm.invalid || isTranslating()"
+                      class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {{ editingRoomId() ? "Saqlash" : "Qo'shish" }}
+                      @if (isTranslating()) {
+                        <mat-icon class="animate-spin">sync</mat-icon>
+                        Tarjima qilinmoqda...
+                      } @else {
+                        {{ editingRoomId() ? "Saqlash" : "Qo'shish" }}
+                      }
                     </button>
                   </form>
                 </div>
@@ -574,6 +701,9 @@ export class AdminComponent implements OnDestroy {
   locationService = inject(LocationService);
   settingsService = inject(SettingsService);
   adminService = inject(AdminService);
+  ns = inject(NotificationService);
+  platformId = inject(PLATFORM_ID);
+  isBrowser = isPlatformBrowser(this.platformId);
   
   t = computed(() => this.ts.t());
   activeTab = signal<AdminTab>('pending');
@@ -597,6 +727,64 @@ export class AdminComponent implements OnDestroy {
 
   selectedPermissions: string[] = [];
 
+  languages: Language[] = ['UZ', 'UZ_KR', 'RU', 'EN', 'QQ'];
+  isTranslating = signal(false);
+  isSubmitting = signal(false);
+
+  async translateFields(fields: Record<string, string>): Promise<Record<string, Record<Language, string>>> {
+    try {
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      const model = ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Translate the following Uzbek texts into Russian (RU), English (EN), Karakalpak (QQ), and Uzbek Cyrillic (UZ_KR). 
+        Return the result strictly as a JSON object where each key is the original field name and the value is another object with keys: RU, EN, QQ, UZ_KR. 
+        Do not include the original Uzbek (UZ) in the JSON.
+        Fields to translate:
+        ${JSON.stringify(fields, null, 2)}`,
+        config: { responseMimeType: "application/json" }
+      });
+
+      const response = await model;
+      const allTranslations = JSON.parse(response.text || '{}');
+      
+      const result: Record<string, Record<Language, string>> = {};
+      for (const key in fields) {
+        const fieldTranslations = allTranslations[key] || {};
+        result[key] = {
+          UZ: fields[key],
+          RU: fieldTranslations.RU || fields[key],
+          EN: fieldTranslations.EN || fields[key],
+          QQ: fieldTranslations.QQ || fields[key],
+          UZ_KR: fieldTranslations.UZ_KR || fields[key]
+        };
+      }
+      return result;
+    } catch (error) {
+      console.error('Translation error:', error);
+      // Fallback to original text for all languages if translation fails
+      const result: Record<string, Record<Language, string>> = {};
+      for (const key in fields) {
+        result[key] = {
+          UZ: fields[key],
+          RU: fields[key],
+          EN: fields[key],
+          QQ: fields[key],
+          UZ_KR: fields[key]
+        };
+      }
+      return result;
+    }
+  }
+
+  createTranslatableGroup(initialValue: Record<string, string | string[]> = {}) {
+    const group: Record<string, unknown> = {};
+    this.languages.forEach(lang => {
+      const val = initialValue[lang] || '';
+      group[lang] = [Array.isArray(val) ? val.join(', ') : val];
+    });
+    return this.fb.group(group);
+  }
+
   constructor() {
     effect(() => {
       const isAdm = this.auth.isAdmin();
@@ -610,6 +798,49 @@ export class AdminComponent implements OnDestroy {
         this.adminService.stopListener();
       }
     });
+
+    effect(() => {
+      const info = this.settingsService.contactInfo();
+      if (info) {
+        this.settingsForm.patchValue({
+          phone: info.phone,
+          email: info.email,
+          mapUrl: info.mapUrl
+        }, { emitEvent: false });
+
+        // Handle footer images array
+        while (this.footerImagesArray.length !== 0) {
+          this.footerImagesArray.removeAt(0);
+        }
+        if (info.footerImages) {
+          info.footerImages.forEach(url => this.addFooterImage(url));
+        }
+
+        // Patch translatable fields
+        ['address', 'siteName', 'siteSubtitle', 'footerDescription', 'copyright'].forEach(field => {
+          const group = this.settingsForm.get(field);
+          const fieldVal = (info as unknown as Record<string, unknown>)[field];
+          if (group && fieldVal) {
+            if (typeof fieldVal === 'string') {
+              // Handle legacy string data
+              const patch: Record<string, string> = {};
+              this.languages.forEach(lang => patch[lang] = fieldVal);
+              group.patchValue(patch, { emitEvent: false });
+            } else {
+              group.patchValue(fieldVal, { emitEvent: false });
+            }
+          }
+        });
+
+        // Handle social links array
+        while (this.socialLinksArray.length !== 0) {
+          this.socialLinksArray.removeAt(0);
+        }
+        if (info.socialLinks) {
+          info.socialLinks.forEach(link => this.addSocialLink(link));
+        }
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngOnDestroy() {
@@ -644,10 +875,10 @@ export class AdminComponent implements OnDestroy {
       this.adminForm.reset();
       this.selectedPermissions = [];
       this.isAddingAdmin.set(false);
-      alert('Admin muvaffaqiyatli qo\'shildi!');
+      this.ns.alert('Admin muvaffaqiyatli qo\'shildi!');
     } catch (error) {
       console.error('Add admin error:', error);
-      alert('Xatolik yuz berdi.');
+      this.ns.alert('Xatolik yuz berdi.');
     }
   }
 
@@ -665,7 +896,8 @@ export class AdminComponent implements OnDestroy {
       { id: 'rejected' as AdminTab, label: t('booking.status.rejected'), icon: 'cancel', count: this.getCount('rejected') },
       { id: 'offline' as AdminTab, label: t('admin.offline'), icon: 'add_circle' },
       { id: 'rooms' as AdminTab, label: t('admin.rooms'), icon: 'hotel' },
-      { id: 'settings' as AdminTab, label: t('admin.contact_settings'), icon: 'settings' }
+      { id: 'settings' as AdminTab, label: t('admin.contact_settings'), icon: 'settings' },
+      { id: 'footer' as AdminTab, label: 'Footer sozlamalari', icon: 'vertical_align_bottom' }
     ];
 
     if (this.auth.hasPermission('admins') || this.auth.hasPermission('all')) {
@@ -676,33 +908,64 @@ export class AdminComponent implements OnDestroy {
   });
 
   roomForm = this.fb.group({
-    type: ['', Validators.required],
+    type: this.createTranslatableGroup(),
     price: [null as number | null, Validators.required],
     capacity: [null as number | null, Validators.required],
     totalCount: [null as number | null, Validators.required],
-    description: ['', Validators.required],
+    description: this.createTranslatableGroup(),
+    amenities: this.createTranslatableGroup(), // Comma separated string per language
     images: this.fb.array([
-      this.fb.control('https://picsum.photos/seed/room1/800/600', Validators.required),
-      this.fb.control('https://picsum.photos/seed/room2/800/600', Validators.required),
-      this.fb.control('https://picsum.photos/seed/room3/800/600', Validators.required)
+      this.fb.control('https://picsum.photos/seed/room1/800/600', Validators.required)
     ])
   });
 
   settingsForm = this.fb.group({
-    phone: [this.settingsService.contactInfo().phone, Validators.required],
-    email: [this.settingsService.contactInfo().email, [Validators.required, Validators.email]],
-    address: [this.settingsService.contactInfo().address, Validators.required],
-    telegram: [this.settingsService.contactInfo().telegram],
-    instagram: [this.settingsService.contactInfo().instagram],
-    mapUrl: [this.settingsService.contactInfo().mapUrl, Validators.required]
+    phone: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    address: this.createTranslatableGroup(),
+    mapUrl: ['', Validators.required],
+    siteName: this.createTranslatableGroup(),
+    siteSubtitle: this.createTranslatableGroup(),
+    footerDescription: this.createTranslatableGroup(),
+    copyright: this.createTranslatableGroup(),
+    footerImages: this.fb.array([]),
+    socialLinks: this.fb.array([])
   });
+
+  get footerImagesArray() {
+    return this.settingsForm.get('footerImages') as FormArray;
+  }
+
+  addFooterImage(url = '') {
+    this.footerImagesArray.push(this.fb.control(url, Validators.required));
+  }
+
+  removeFooterImage(index: number) {
+    this.footerImagesArray.removeAt(index);
+  }
+
+  get socialLinksArray() {
+    return this.settingsForm.get('socialLinks') as FormArray;
+  }
+
+  addSocialLink(link?: SocialLink) {
+    this.socialLinksArray.push(this.fb.group({
+      platform: [link?.platform || '', Validators.required],
+      url: [link?.url || '', Validators.required],
+      icon: [link?.icon || 'link', Validators.required]
+    }));
+  }
+
+  removeSocialLink(index: number) {
+    this.socialLinksArray.removeAt(index);
+  }
 
   get roomImagesArray() {
     return this.roomForm.get('images') as FormArray;
   }
 
   addImage() {
-    if (this.roomImagesArray.length < 10) {
+    if (this.roomImagesArray.length < 12) {
       this.roomImagesArray.push(this.fb.control('', Validators.required));
     }
   }
@@ -711,9 +974,43 @@ export class AdminComponent implements OnDestroy {
     this.roomImagesArray.removeAt(index);
   }
 
+  async onFooterFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    if (this.footerImagesArray.length >= 12) {
+      this.ns.alert('Maksimal 12 ta rasm yuklash mumkin.');
+      return;
+    }
+
+    const file = input.files[0];
+    const path = `footer/${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, path);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed', 
+      null,
+      (error) => {
+        console.error('Footer image upload error:', error);
+        this.ns.alert('Rasm yuklashda xatolik yuz berdi.');
+      }, 
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        this.addFooterImage(downloadURL);
+        this.ns.alert('Rasm muvaffaqiyatli yuklandi!');
+        input.value = '';
+      }
+    );
+  }
+
   async onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
+
+    if (this.roomImagesArray.length >= 12) {
+      this.ns.alert('Maksimal 12 ta rasm yuklash mumkin.');
+      return;
+    }
 
     const file = input.files[0];
     const path = `rooms/${Date.now()}_${file.name}`;
@@ -731,7 +1028,7 @@ export class AdminComponent implements OnDestroy {
       (error) => {
         console.error('Upload error:', error);
         this.uploadingImage.set(false);
-        alert('Rasm yuklashda xatolik yuz berdi.');
+        this.ns.alert('Rasm yuklashda xatolik yuz berdi.');
       }, 
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
@@ -861,10 +1158,10 @@ export class AdminComponent implements OnDestroy {
       });
       this.peopleCount.set(1);
       this.activeTab.set('pending');
-      alert('Offline bron muvaffaqiyatli qo\'shildi!');
+      this.ns.alert('Offline bron muvaffaqiyatli qo\'shildi!');
     } catch (e) {
       console.error(e);
-      alert('Xatolik yuz berdi.');
+      this.ns.alert('Xatolik yuz berdi.');
     }
   }
 
@@ -916,54 +1213,99 @@ export class AdminComponent implements OnDestroy {
 
   async onAddRoom() {
     if (this.roomForm.invalid) return;
+    this.isSubmitting.set(true);
+    this.isTranslating.set(true);
     const val = this.roomForm.value;
     
-    const roomData: Room = {
-      type: val.type!,
-      price: val.price!,
-      capacity: val.capacity!,
-      totalCount: val.totalCount!,
-      description: val.description!,
-      images: val.images as string[],
-      amenities: ['WiFi', 'TV', 'Issiq suv', 'Konditsioner']
-    };
-
     try {
+      // Translate fields
+      const translations = await this.translateFields({
+        type: (val.type as Record<string, string>)['UZ'],
+        description: (val.description as Record<string, string>)['UZ'],
+        amenities: (val.amenities as Record<string, string>)['UZ']
+      });
+
+      // Process amenities: convert comma-separated strings to arrays for each language
+      const processedAmenities: Record<string, string[]> = {};
+      this.languages.forEach(lang => {
+        const amenityStr = translations['amenities'][lang] || '';
+        processedAmenities[lang] = amenityStr.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+      });
+
+      const roomData: Partial<Room> = {
+        type: translations['type'],
+        price: val.price!,
+        capacity: val.capacity!,
+        totalCount: val.totalCount!,
+        description: translations['description'],
+        amenities: processedAmenities,
+        images: (val.images as string[]).filter(img => img && img.trim().length > 0)
+      };
+
       if (this.editingRoomId()) {
         await this.roomService.updateRoom(this.editingRoomId()!, roomData);
-        this.editingRoomId.set(null);
-        alert('Xona muvaffaqiyatli yangilandi!');
+        this.ns.alert('Xona muvaffaqiyatli yangilandi!');
       } else {
-        await this.roomService.addRoom(roomData);
-        alert('Xona muvaffaqiyatli qo\'shildi!');
+        await this.roomService.addRoom(roomData as Room);
+        this.ns.alert('Xona muvaffaqiyatli qo\'shildi!');
       }
-      this.roomForm.reset();
-      while (this.roomImagesArray.length > 3) {
-        this.roomImagesArray.removeAt(this.roomImagesArray.length - 1);
-      }
+      this.onCancelEditRoom();
     } catch (error) {
       console.error('Room operation error:', error);
-      alert('Xatolik yuz berdi.');
+      this.ns.alert('Xatolik yuz berdi.');
+    } finally {
+      this.isSubmitting.set(false);
+      this.isTranslating.set(false);
     }
   }
 
   onEditRoom(room: Room) {
     this.editingRoomId.set(room.id!);
+    
+    // Process amenities back to comma-separated strings
+    const amenitiesStr: Record<string, string> = {};
+    this.languages.forEach(lang => {
+      const langAmenities = room.amenities[lang];
+      if (Array.isArray(langAmenities)) {
+        amenitiesStr[lang] = langAmenities.join(', ');
+      } else if (typeof room.amenities === 'object' && room.amenities !== null) {
+        // Handle case where amenities might be a string in some languages (legacy)
+        const val = (room.amenities as Record<string, unknown>)[lang];
+        amenitiesStr[lang] = Array.isArray(val) ? val.join(', ') : (typeof val === 'string' ? val : '');
+      } else {
+        amenitiesStr[lang] = '';
+      }
+    });
+
+    // Handle legacy string data for type and description
+    const patchType = typeof room.type === 'string' 
+      ? this.languages.reduce((acc, lang) => ({ ...acc, [lang]: room.type }), {})
+      : room.type;
+    
+    const patchDesc = typeof room.description === 'string'
+      ? this.languages.reduce((acc, lang) => ({ ...acc, [lang]: room.description }), {})
+      : room.description;
+
     this.roomForm.patchValue({
-      type: room.type,
+      type: patchType,
       price: room.price,
       capacity: room.capacity,
       totalCount: room.totalCount,
-      description: room.description
+      description: patchDesc,
+      amenities: amenitiesStr
     });
-    
-    // Handle images array
+
     while (this.roomImagesArray.length !== 0) {
       this.roomImagesArray.removeAt(0);
     }
-    room.images.forEach(img => {
-      this.roomImagesArray.push(this.fb.control(img, Validators.required));
-    });
+    if (Array.isArray(room.images)) {
+      room.images.forEach(img => this.roomImagesArray.push(this.fb.control(img, Validators.required)));
+    }
+    
+    this.activeTab.set('rooms');
+    if (this.isBrowser) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   onCancelEditRoom() {
@@ -975,32 +1317,62 @@ export class AdminComponent implements OnDestroy {
   }
 
   async onDeleteRoom(id: string) {
-    if (confirm("Ushbu xonani butunlay o'chirmoqchimisiz?")) {
+    if (this.ns.confirm("Ushbu xonani butunlay o'chirmoqchimisiz?")) {
       try {
         await this.roomService.deleteRoom(id);
-        alert("Xona o'chirildi.");
+        this.ns.alert("Xona o'chirildi.");
       } catch (error) {
         console.error('Delete room error:', error);
-        alert("Xonani o'chirishda xatolik yuz berdi.");
+        this.ns.alert("Xonani o'chirishda xatolik yuz berdi.");
       }
     }
   }
 
   async onSettingsSubmit() {
     if (this.settingsForm.invalid) return;
+    this.isSubmitting.set(true);
+    this.isTranslating.set(true);
+    const val = this.settingsForm.value;
+
     try {
-      await this.settingsService.updateContactInfo(this.settingsForm.value as ContactInfo);
-      alert('Kontakt ma’lumotlari saqlandi!');
+      // Translate all translatable fields
+      const translations = await this.translateFields({
+        address: (val.address as Record<string, string>)['UZ'],
+        siteName: (val.siteName as Record<string, string>)['UZ'],
+        siteSubtitle: (val.siteSubtitle as Record<string, string>)['UZ'],
+        footerDescription: (val.footerDescription as Record<string, string>)['UZ'],
+        copyright: (val.copyright as Record<string, string>)['UZ']
+      });
+
+      const updatedInfo: Partial<ContactInfo> = {
+        phone: val.phone!,
+        email: val.email!,
+        mapUrl: val.mapUrl!,
+        footerImages: val.footerImages as string[],
+        address: translations['address'],
+        siteName: translations['siteName'],
+        siteSubtitle: translations['siteSubtitle'],
+        footerDescription: translations['footerDescription'],
+        copyright: translations['copyright'],
+        socialLinks: val.socialLinks as SocialLink[]
+      };
+
+      await this.settingsService.updateContactInfo(updatedInfo as ContactInfo);
+      this.ns.alert('Sozlamalar saqlandi!');
     } catch (error) {
       console.error('Settings update error:', error);
+      this.ns.alert('Xatolik yuz berdi.');
+    } finally {
+      this.isSubmitting.set(false);
+      this.isTranslating.set(false);
     }
   }
 
   async onSyncPublic() {
-    if (confirm("Barcha bronlarni ochiq ma'lumotlar bilan sinxronizatsiya qilmoqchimisiz? Bu bron qilishda bo'sh joylarni to'g'ri ko'rsatish uchun kerak.")) {
+    if (this.ns.confirm("Barcha bronlarni ochiq ma'lumotlar bilan sinxronizatsiya qilmoqchimisiz? Bu bron qilishda bo'sh joylarni to'g'ri ko'rsatish uchun kerak.")) {
       try {
         const count = await this.bookingService.syncPublicBookings();
-        alert(`${count} ta bron sinxronizatsiya qilindi.`);
+        this.ns.alert(`${count} ta bron sinxronizatsiya qilindi.`);
       } catch (error) {
         console.error('Sync error:', error);
       }
@@ -1011,10 +1383,10 @@ export class AdminComponent implements OnDestroy {
     const msg = type === 'rejected' ? "Barcha rad etilganlarni o'chirmoqchimisiz?" : 
                 type === 'archive' ? "Barcha arxivlanganlarni o'chirmoqchimisiz?" : 
                 "Barcha eski bronlarni o'chirmoqchimisiz?";
-    if (confirm(msg)) {
+    if (this.ns.confirm(msg)) {
       try {
         const count = await this.bookingService.clearOldBookings(type);
-        alert(`${count} ta bron o'chirildi.`);
+        this.ns.alert(`${count} ta bron o'chirildi.`);
       } catch (error) {
         console.error('Clear error:', error);
       }

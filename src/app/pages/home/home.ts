@@ -5,13 +5,14 @@ import { TranslationService } from '../../services/translation';
 import { SettingsService } from '../../services/settings';
 import { RoomService } from '../../services/room';
 import { NavbarComponent } from '../../components/navbar';
+import { FooterComponent } from '../../components/footer';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-home',
-  imports: [NavbarComponent, RouterLink, MatIconModule, CommonModule],
+  imports: [NavbarComponent, FooterComponent, RouterLink, MatIconModule, CommonModule],
   template: `
     <div class="relative min-h-screen bg-black text-white overflow-hidden">
       <!-- Hero Background -->
@@ -43,7 +44,7 @@ import { AuthService } from '../../services/auth';
                 class="bg-emerald-500 text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20"
               >
                 <mat-icon>admin_panel_settings</mat-icon>
-                Admin Panelga o'tish
+                Admin Panel
               </button>
             }
             <button 
@@ -105,11 +106,11 @@ import { AuthService } from '../../services/auth';
                 </div>
               </div>
               <div class="p-8">
-                <h3 class="text-2xl font-bold mb-4">{{ room.type }}</h3>
-                <p class="text-white/50 text-sm mb-6 line-clamp-2">{{ room.description }}</p>
+                <h3 class="text-2xl font-bold mb-4">{{ ts.translateObject(room.type) }}</h3>
+                <p class="text-white/50 text-sm mb-6 line-clamp-2">{{ ts.translateObject(room.description) }}</p>
                 <button 
                   routerLink="/booking"
-                  [queryParams]="{ roomId: room.id, roomType: room.type }"
+                  [queryParams]="{ roomId: room.id, roomType: ts.translateObject(room.type) }"
                   class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-bold transition-all"
                 >
                   {{ t()('rooms.book') }}
@@ -120,7 +121,7 @@ import { AuthService } from '../../services/auth';
         </div>
         <div class="text-center mt-12">
           <button routerLink="/rooms" class="glass px-8 py-3 rounded-full font-bold hover:bg-white/10 transition-all">
-            Barcha xonalarni ko'rish
+            {{ t()('hero.view_rooms') }}
           </button>
         </div>
       </section>
@@ -136,7 +137,7 @@ import { AuthService } from '../../services/auth';
                 </div>
                 <div>
                   <div class="text-white/50 text-sm">{{ t()('contact.address') }}</div>
-                  <div class="text-xl font-bold">{{ settingsService.contactInfo().address }}</div>
+                  <div class="text-xl font-bold">{{ ts.translateObject(settingsService.contactInfo().address) }}</div>
                 </div>
               </div>
               <div class="flex items-center gap-6">
@@ -180,6 +181,8 @@ import { AuthService } from '../../services/auth';
           </div>
         </div>
       </section>
+
+      <app-footer></app-footer>
     </div>
   `
 })

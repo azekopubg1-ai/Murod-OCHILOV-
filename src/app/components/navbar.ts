@@ -2,6 +2,7 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslationService, Language } from '../services/translation';
 import { AuthService } from '../services/auth';
+import { SettingsService } from '../services/settings';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 
@@ -12,7 +13,9 @@ import { CommonModule } from '@angular/common';
     <nav class="fixed top-0 left-0 right-0 z-50 glass m-4 rounded-2xl p-4 flex items-center justify-between">
       <div class="flex items-center gap-2 cursor-pointer" routerLink="/">
         <mat-icon class="text-emerald-500">spa</mat-icon>
-        <span class="font-display font-bold text-lg md:text-xl tracking-tight">Murod Ocilov</span>
+        <span class="font-display font-bold text-lg md:text-xl tracking-tight">
+          {{ ts.translateObject(settingsService.contactInfo().siteName) }}
+        </span>
       </div>
       
       <!-- Desktop Menu -->
@@ -149,6 +152,7 @@ import { CommonModule } from '@angular/common';
 export class NavbarComponent {
   ts = inject(TranslationService);
   auth = inject(AuthService);
+  settingsService = inject(SettingsService);
   t = computed(() => this.ts.t());
   languages: Language[] = ['UZ', 'UZ_KR', 'RU', 'EN', 'QQ'];
   isMenuOpen = signal(false);

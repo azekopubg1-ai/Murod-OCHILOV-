@@ -10,10 +10,12 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Router } from '@angular/router';
+import { NotificationService } from './notification';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private router = inject(Router);
+  private ns = inject(NotificationService);
   user = signal<User | null>(null);
   isAdmin = signal<boolean>(false);
   permissions = signal<string[]>([]);
@@ -77,7 +79,7 @@ export class AuthService {
       await signInAnonymously(auth);
     } catch (error) {
       console.error('Anonymous login error:', error);
-      alert('Anonim kirishda xatolik yuz berdi.');
+      this.ns.alert('Anonim kirishda xatolik yuz berdi.');
     } finally {
       this.isLoggingIn.set(false);
     }
@@ -93,11 +95,11 @@ export class AuthService {
       console.error('Login error:', error);
       const firebaseError = error as { code?: string; message?: string };
       if (firebaseError.code === 'auth/unauthorized-domain') {
-        alert('Xatolik: Ushbu domen Firebase-da ruxsat etilmagan. Iltimos, Firebase Console-da "Authorized domains" ro\'yxatiga ushbu domenni qo\'shing.');
+        this.ns.alert('Xatolik: Ushbu domen Firebase-da ruxsat etilmagan. Iltimos, Firebase Console-da "Authorized domains" ro\'yxatiga ushbu domenni qo\'shing.');
       } else if (firebaseError.code === 'auth/operation-not-allowed') {
-        alert('Xatolik: Ushbu kirish usuli (Apple/Google) Firebase Console-da yoqilmagan.');
+        this.ns.alert('Xatolik: Ushbu kirish usuli (Apple/Google) Firebase Console-da yoqilmagan.');
       } else {
-        alert('Kirishda xatolik yuz berdi: ' + (firebaseError.message || 'Noma’lum xatolik'));
+        this.ns.alert('Kirishda xatolik yuz berdi: ' + (firebaseError.message || 'Noma’lum xatolik'));
       }
     } finally {
       this.isLoggingIn.set(false);

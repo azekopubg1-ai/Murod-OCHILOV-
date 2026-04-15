@@ -5,7 +5,9 @@ import { BookingService, Booking } from '../../services/booking';
 import { RoomService } from '../../services/room';
 import { AuthService } from '../../services/auth';
 import { LocationService } from '../../services/location';
+import { NotificationService } from '../../services/notification';
 import { NavbarComponent } from '../../components/navbar';
+import { FooterComponent } from '../../components/footer';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -21,7 +23,7 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
 
 @Component({
   selector: 'app-booking',
-  imports: [NavbarComponent, MatIconModule, ReactiveFormsModule, CommonModule],
+  imports: [NavbarComponent, FooterComponent, MatIconModule, ReactiveFormsModule, CommonModule],
   template: `
     <div class="min-h-screen bg-zinc-950 text-white pb-24">
       <app-navbar></app-navbar>
@@ -50,8 +52,24 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
               @if (bookingForm.errors?.['dateRangeInvalid']) {
                 <span class="text-sm font-bold">{{ t()('booking.error.date_range') }}</span>
               } @else {
-                <span class="text-sm font-bold">Tanlangan sanalarda bo'sh joy yo'q.</span>
+                <span class="text-sm font-bold">{{ t()('booking.no_availability') }}</span>
               }
+            </div>
+          }
+
+          @if (selectedRoomType() && busyDates().length > 0) {
+            <div class="glass p-6 rounded-3xl mb-8 border-amber-500/20">
+              <div class="flex items-center gap-2 mb-4 text-amber-500">
+                <mat-icon>event_busy</mat-icon>
+                <h3 class="font-bold">{{ t()('booking.busy_dates') }}</h3>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (range of busyDates(); track range) {
+                  <span class="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full text-xs font-medium">
+                    {{ range }}
+                  </span>
+                }
+              </div>
             </div>
           }
 
@@ -229,6 +247,8 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
           </div>
         }
       </div>
+
+      <app-footer></app-footer>
     </div>
   `,
   styles: [`
@@ -244,6 +264,7 @@ export class BookingComponent implements OnInit {
   roomService = inject(RoomService);
   auth = inject(AuthService);
   locationService = inject(LocationService);
+  ns = inject(NotificationService);
   route = inject(ActivatedRoute);
   router = inject(Router);
   fb = inject(FormBuilder);
@@ -255,6 +276,7 @@ export class BookingComponent implements OnInit {
   peopleCount = signal(1);
   isRoomAvailable = signal(true);
   availableSpots = signal(0);
+  busyDates = signal<string[]>([]);
   today = new Date().toISOString().split('T')[0];
 
   countries = this.locationService.getCountries().filter(c => c.id === 'uz' || c.id === 'other');
@@ -327,7 +349,10 @@ export class BookingComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['roomId']) this.selectedRoomId.set(params['roomId']);
-      if (params['roomType']) this.selectedRoomType.set(params['roomType']);
+      if (params['roomType']) {
+        this.selectedRoomType.set(params['roomType']);
+        this.checkAvailability();
+      }
     });
 
     // Watch for date changes to check availability
@@ -345,7 +370,10 @@ export class BookingComponent implements OnInit {
       return;
     }
 
-    const room = this.roomService.rooms().find(r => r.type === roomType);
+    const room = this.roomService.rooms().find(r => {
+      if (typeof r.type === 'string') return r.type === roomType;
+      return Object.values(r.type as Record<string, string>).includes(roomType);
+    });
     if (!room) return;
 
     const checkIn = new Date(val.checkIn);
@@ -386,6 +414,66 @@ export class BookingComponent implements OnInit {
     
     this.availableSpots.set(minRemaining);
     this.isRoomAvailable.set(minRemaining >= this.peopleCount());
+    this.calculateBusyDates();
+  }
+
+  calculateBusyDates() {
+    const roomType = this.selectedRoomType();
+    if (!roomType) {
+      this.busyDates.set([]);
+      return;
+    }
+
+    const room = this.roomService.rooms().find(r => {
+      if (typeof r.type === 'string') return r.type === roomType;
+      return Object.values(r.type as Record<string, string>).includes(roomType);
+    });
+    if (!room) return;
+
+    const totalSpots = (room.totalCount || 1) * (room.capacity || 1);
+    const activeBookings = this.bookingService.publicBookings().filter(b => 
+      b.roomType === roomType && 
+      b.status !== 'rejected' && b.status !== 'archive'
+    );
+
+    const busyRanges: string[] = [];
+    const start = new Date();
+    const end = new Date();
+    end.setMonth(end.getMonth() + 3); // Check 3 months ahead
+
+    let currentRangeStart: Date | null = null;
+    const current = new Date(start);
+    
+    while (current <= end) {
+      const dayStart = new Date(current);
+      const dayEnd = new Date(current);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const occupiedOnDay = activeBookings.filter(b => 
+        new Date(b.checkIn) < dayEnd && new Date(b.checkOut) > dayStart
+      ).reduce((sum, b) => sum + (b.peopleCount || 1), 0);
+
+      // A day is "busy" if there are no spots left for at least 1 person
+      const isBusy = (totalSpots - occupiedOnDay) < 1;
+
+      if (isBusy) {
+        if (!currentRangeStart) currentRangeStart = new Date(current);
+      } else {
+        if (currentRangeStart) {
+          const rangeEnd = new Date(current);
+          rangeEnd.setDate(rangeEnd.getDate() - 1);
+          busyRanges.push(`${currentRangeStart.toISOString().split('T')[0]} - ${rangeEnd.toISOString().split('T')[0]}`);
+          currentRangeStart = null;
+        }
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (currentRangeStart) {
+      busyRanges.push(`${currentRangeStart.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]}`);
+    }
+
+    this.busyDates.set(busyRanges);
   }
 
   onCountryChange() {
@@ -471,10 +559,10 @@ export class BookingComponent implements OnInit {
       this.setPeopleCount(1);
       this.selectedRoomId.set(null);
       this.selectedRoomType.set(null);
-      alert('Bron muvaffaqiyatli yuborildi!');
+      this.ns.alert('Bron muvaffaqiyatli yuborildi!');
     } catch (error) {
       console.error('Booking error:', error);
-      alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+      this.ns.alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
     } finally {
       this.isSubmitting.set(false);
     }
