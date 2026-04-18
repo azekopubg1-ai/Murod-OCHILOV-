@@ -4,7 +4,7 @@ import { TranslationService } from '../../services/translation';
 import { BookingService, Booking } from '../../services/booking';
 import { RoomService } from '../../services/room';
 import { AuthService } from '../../services/auth';
-import { LocationService } from '../../services/location';
+import { LocationService, LocationItem } from '../../services/location';
 import { NotificationService } from '../../services/notification';
 import { NavbarComponent } from '../../components/navbar';
 import { FooterComponent } from '../../components/footer';
@@ -149,44 +149,30 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
                 <select id="country" formControlName="country" (change)="onCountryChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none">
                   <option value="" disabled selected>{{ t()('booking.select') }}</option>
                   @for (country of countries; track country.id) {
-                    <option [value]="country.id">{{ country.name[ts.getLanguage()] }}</option>
+                    <option [value]="country.id">{{ country.name }}</option>
                   }
                 </select>
               </div>
-              @if (selectedCountryId() === 'other') {
-                <div class="space-y-2">
-                  <label for="otherCountry" class="text-sm font-medium text-white/50">Davlat nomi</label>
-                  <input id="otherCountry" type="text" formControlName="otherCountry" placeholder="Davlatni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-                </div>
-              }
             </div>
 
             <div class="grid md:grid-cols-2 gap-6">
               <div class="space-y-2">
                 <label for="region" class="text-sm font-medium text-white/50">{{ t()('booking.region') }}</label>
-                @if (selectedCountryId() === 'other') {
-                  <input id="otherRegion" type="text" formControlName="otherRegion" placeholder="Viloyatni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-                } @else {
-                  <select id="region" formControlName="region" (change)="onRegionChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableRegions().length">
-                    <option value="" disabled selected>{{ t()('booking.select') }}</option>
-                    @for (region of availableRegions(); track region.id) {
-                      <option [value]="region.id">{{ region.name[ts.getLanguage()] }}</option>
-                    }
-                  </select>
-                }
+                <select id="region" formControlName="region" (change)="onRegionChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableRegions().length">
+                  <option value="" disabled selected>{{ t()('booking.select') }}</option>
+                  @for (region of availableRegions(); track region.id) {
+                    <option [value]="region.id">{{ region.name }}</option>
+                  }
+                </select>
               </div>
               <div class="space-y-2">
                 <label for="district" class="text-sm font-medium text-white/50">{{ t()('booking.district') }}</label>
-                @if (selectedCountryId() === 'other') {
-                  <input id="otherDistrict" type="text" formControlName="otherDistrict" placeholder="Tumanni yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-                } @else {
-                  <select id="district" formControlName="district" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableDistricts().length">
-                    <option value="" disabled selected>{{ t()('booking.select') }}</option>
-                    @for (district of availableDistricts(); track district.id) {
-                      <option [value]="district.id">{{ district.name[ts.getLanguage()] }}</option>
-                    }
-                  </select>
-                }
+                <select id="district" formControlName="district" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableDistricts().length">
+                  <option value="" disabled selected>{{ t()('booking.select') }}</option>
+                  @for (district of availableDistricts(); track district.id) {
+                    <option [value]="district.id">{{ district.name }}</option>
+                  }
+                </select>
               </div>
             </div>
 
@@ -279,7 +265,9 @@ export class BookingComponent implements OnInit {
   busyDates = signal<string[]>([]);
   today = new Date().toISOString().split('T')[0];
 
-  countries = this.locationService.getCountries().filter(c => c.id === 'uz' || c.id === 'other');
+  countries = this.locationService.getCountries();
+  availableRegions = signal<LocationItem[]>([]);
+  availableDistricts = signal<LocationItem[]>([]);
   selectedCountryId = signal('');
   selectedRegionId = signal('');
 
@@ -288,11 +276,8 @@ export class BookingComponent implements OnInit {
     phone: ['', Validators.required],
     telegram: [''],
     country: ['', Validators.required],
-    otherCountry: [''],
     region: ['', Validators.required],
-    otherRegion: [''],
     district: ['', Validators.required],
-    otherDistrict: [''],
     mahalla: ['', Validators.required],
     checkIn: ['', Validators.required],
     checkOut: ['', Validators.required]
@@ -314,7 +299,7 @@ export class BookingComponent implements OnInit {
   setPeopleCount(count: number) {
     this.peopleCount.set(count);
     while (this.peopleFormArray.length !== count) {
-      if (this.peopleFormArray.length < count) {
+      if (this.peopleCount() > this.peopleFormArray.length) {
         this.peopleFormArray.push(this.createPersonGroup());
       } else {
         this.peopleFormArray.removeAt(this.peopleFormArray.length - 1);
@@ -322,18 +307,6 @@ export class BookingComponent implements OnInit {
     }
     this.checkAvailability();
   }
-
-  availableRegions = computed(() => {
-    const countryId = this.selectedCountryId();
-    if (!countryId) return [];
-    return this.countries.find(c => c.id === countryId)?.regions || [];
-  });
-
-  availableDistricts = computed(() => {
-    const regionId = this.selectedRegionId();
-    if (!regionId) return [];
-    return this.availableRegions().find(r => r.id === regionId)?.districts || [];
-  });
 
   constructor() {
     effect(() => {
@@ -480,38 +453,21 @@ export class BookingComponent implements OnInit {
     const countryId = this.bookingForm.get('country')?.value || '';
     this.selectedCountryId.set(countryId);
     
-    if (countryId === 'other') {
-      this.bookingForm.get('region')?.clearValidators();
-      this.bookingForm.get('district')?.clearValidators();
-      this.bookingForm.get('otherCountry')?.setValidators([Validators.required]);
-      this.bookingForm.get('otherRegion')?.setValidators([Validators.required]);
-      this.bookingForm.get('otherDistrict')?.setValidators([Validators.required]);
-    } else {
-      this.bookingForm.get('region')?.setValidators([Validators.required]);
-      this.bookingForm.get('district')?.setValidators([Validators.required]);
-      this.bookingForm.get('otherCountry')?.clearValidators();
-      this.bookingForm.get('otherRegion')?.clearValidators();
-      this.bookingForm.get('otherDistrict')?.clearValidators();
-    }
-    
+    const states = this.locationService.getStatesOfCountry(countryId);
+    this.availableRegions.set(states);
+    this.availableDistricts.set([]);
+
     this.bookingForm.get('region')?.setValue('');
     this.bookingForm.get('district')?.setValue('');
-    this.bookingForm.get('otherCountry')?.setValue('');
-    this.bookingForm.get('otherRegion')?.setValue('');
-    this.bookingForm.get('otherDistrict')?.setValue('');
-    
-    this.bookingForm.get('region')?.updateValueAndValidity();
-    this.bookingForm.get('district')?.updateValueAndValidity();
-    this.bookingForm.get('otherCountry')?.updateValueAndValidity();
-    this.bookingForm.get('otherRegion')?.updateValueAndValidity();
-    this.bookingForm.get('otherDistrict')?.updateValueAndValidity();
-    
     this.selectedRegionId.set('');
   }
 
   onRegionChange() {
     const regionId = this.bookingForm.get('region')?.value || '';
     this.selectedRegionId.set(regionId);
+    
+    const cities = this.locationService.getCitiesOfState(this.selectedCountryId(), regionId);
+    this.availableDistricts.set(cities);
     this.bookingForm.get('district')?.setValue('');
   }
 
@@ -521,20 +477,9 @@ export class BookingComponent implements OnInit {
     this.isSubmitting.set(true);
     const formValue = this.bookingForm.value;
 
-    let country = '';
-    let region = '';
-    let district = '';
-
-    const lang = this.ts.getLanguage();
-    if (formValue.country === 'other') {
-      country = formValue.otherCountry || 'Boshqa';
-      region = formValue.otherRegion || '';
-      district = formValue.otherDistrict || '';
-    } else {
-      country = this.countries.find(c => c.id === formValue.country)?.name[lang] || formValue.country || '';
-      region = this.availableRegions().find(r => r.id === formValue.region)?.name[lang] || formValue.region || '';
-      district = this.availableDistricts().find(d => d.id === formValue.district)?.name[lang] || formValue.district || '';
-    }
+    const country = this.countries.find(c => c.id === formValue.country)?.name || formValue.country || '';
+    const region = this.availableRegions().find(r => r.id === formValue.region)?.name || formValue.region || '';
+    const district = this.availableDistricts().find(d => d.id === formValue.district)?.name || formValue.district || '';
 
     const booking: Booking = {
       userId: this.auth.user()!.uid,

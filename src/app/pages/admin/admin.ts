@@ -4,7 +4,7 @@ import { TranslationService, Language } from '../../services/translation';
 import { RoomService, Room } from '../../services/room';
 import { BookingService, Booking } from '../../services/booking';
 import { AuthService } from '../../services/auth';
-import { LocationService } from '../../services/location';
+import { LocationService, LocationItem } from '../../services/location';
 import { SettingsService, ContactInfo, SocialLink } from '../../services/settings';
 import { AdminService } from '../../services/admin';
 import { NotificationService } from '../../services/notification';
@@ -310,39 +310,29 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <select formControlName="country" (change)="onCountryChange($event)" class="glass p-4 rounded-2xl appearance-none">
+                        <option value="" disabled selected>Davlat</option>
                         @for (country of countries; track country.id) {
-                          <option [value]="country.id">{{ country.name[ts.getLanguage()] }}</option>
+                          <option [value]="country.id">{{ country.name }}</option>
                         }
                       </select>
-                      @if (selectedCountry() === 'other') {
-                        <input type="text" formControlName="otherCountry" placeholder="Davlat nomi" class="glass p-4 rounded-2xl">
-                      }
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="space-y-2">
-                        @if (selectedCountry() === 'other') {
-                          <input type="text" formControlName="otherRegion" placeholder="Viloyat" class="w-full glass p-4 rounded-2xl">
-                        } @else {
-                          <select formControlName="region" (change)="onRegionChange($event)" class="w-full glass p-4 rounded-2xl appearance-none">
-                            <option value="" disabled selected>Viloyat</option>
-                            @for (region of regions(); track region.id) {
-                              <option [value]="region.id">{{ region.name[ts.getLanguage()] }}</option>
-                            }
-                          </select>
-                        }
+                        <select formControlName="region" (change)="onRegionChange($event)" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!regions().length">
+                          <option value="" disabled selected>Viloyat</option>
+                          @for (region of regions(); track region.id) {
+                            <option [value]="region.id">{{ region.name }}</option>
+                          }
+                        </select>
                       </div>
                       <div class="space-y-2">
-                        @if (selectedCountry() === 'other') {
-                          <input type="text" formControlName="otherDistrict" placeholder="Tuman" class="w-full glass p-4 rounded-2xl">
-                        } @else {
-                          <select formControlName="district" class="w-full glass p-4 rounded-2xl appearance-none">
-                            <option value="" disabled selected>Tuman</option>
-                            @for (district of districts(); track district.id) {
-                              <option [value]="district.id">{{ district.name[ts.getLanguage()] }}</option>
-                            }
-                          </select>
-                        }
+                        <select formControlName="district" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!districts().length">
+                          <option value="" disabled selected>Tuman</option>
+                          @for (district of districts(); track district.id) {
+                            <option [value]="district.id">{{ district.name }}</option>
+                          }
+                        </select>
                       </div>
                     </div>
                     <input type="text" formControlName="mahalla" placeholder="Mahalla" class="w-full glass p-4 rounded-2xl">
@@ -708,8 +698,11 @@ export class AdminComponent implements OnDestroy {
   t = computed(() => this.ts.t());
   activeTab = signal<AdminTab>('pending');
   peopleCount = signal(1);
-  countries = this.locationService.getCountries().filter(c => c.id === 'uz' || c.id === 'other');
-  selectedCountry = signal('uz');
+  countries = this.locationService.getCountries();
+  selectedCountry = signal('');
+  selectedRegion = signal('');
+  regions = signal<LocationItem[]>([]);
+  districts = signal<LocationItem[]>([]);
   searchQuery = signal('');
   isAddingAdmin = signal(false);
   extendingBookingId = signal<string | null>(null);
@@ -727,7 +720,11 @@ export class AdminComponent implements OnDestroy {
 
   selectedPermissions: string[] = [];
 
-  languages: Language[] = ['UZ', 'UZ_KR', 'RU', 'EN', 'QQ'];
+  languages: Language[] = [
+    'UZ', 'UZ_KR', 'RU', 'EN', 'QQ', 
+    'TR', 'AR', 'ES', 'FR', 'DE', 
+    'ZH', 'HI', 'PT', 'BN', 'JA', 'KO'
+  ];
   isTranslating = signal(false);
   isSubmitting = signal(false);
 
@@ -736,8 +733,8 @@ export class AdminComponent implements OnDestroy {
       const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       const model = ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Translate the following Uzbek texts into Russian (RU), English (EN), Karakalpak (QQ), and Uzbek Cyrillic (UZ_KR). 
-        Return the result strictly as a JSON object where each key is the original field name and the value is another object with keys: RU, EN, QQ, UZ_KR. 
+        contents: `Translate the following Uzbek texts into Russian (RU), English (EN), Karakalpak (QQ), Uzbek Cyrillic (UZ_KR), Turkish (TR), Arabic (AR), Spanish (ES), French (FR), German (DE), Chinese (ZH), Hindi (HI), Portuguese (PT), Bengali (BN), Japanese (JA), and Korean (KO). 
+        Return the result strictly as a JSON object where each key is the original field name and the value is another object with keys: RU, EN, QQ, UZ_KR, TR, AR, ES, FR, DE, ZH, HI, PT, BN, JA, KO. 
         Do not include the original Uzbek (UZ) in the JSON.
         Fields to translate:
         ${JSON.stringify(fields, null, 2)}`,
@@ -749,28 +746,25 @@ export class AdminComponent implements OnDestroy {
       
       const result: Record<string, Record<Language, string>> = {};
       for (const key in fields) {
-        const fieldTranslations = allTranslations[key] || {};
-        result[key] = {
-          UZ: fields[key],
-          RU: fieldTranslations.RU || fields[key],
-          EN: fieldTranslations.EN || fields[key],
-          QQ: fieldTranslations.QQ || fields[key],
-          UZ_KR: fieldTranslations.UZ_KR || fields[key]
-        };
+        const trs = allTranslations[key] || {};
+        const translations: Record<Language, string> = { UZ: fields[key] } as Record<Language, string>;
+        this.languages.forEach(l => {
+          if (l !== 'UZ') {
+            translations[l] = trs[l] || fields[key];
+          }
+        });
+        result[key] = translations;
       }
       return result;
     } catch (error) {
       console.error('Translation error:', error);
-      // Fallback to original text for all languages if translation fails
       const result: Record<string, Record<Language, string>> = {};
       for (const key in fields) {
-        result[key] = {
-          UZ: fields[key],
-          RU: fields[key],
-          EN: fields[key],
-          QQ: fields[key],
-          UZ_KR: fields[key]
-        };
+        const translations: Record<Language, string> = {} as Record<Language, string>;
+        this.languages.forEach(l => {
+          translations[l] = fields[key];
+        });
+        result[key] = translations;
       }
       return result;
     }
@@ -1044,66 +1038,37 @@ export class AdminComponent implements OnDestroy {
     people: this.fb.array([this.createPersonGroup()]),
     phone: ['', Validators.required],
     roomType: ['', Validators.required],
-    country: ['uz', Validators.required],
-    otherCountry: [''],
+    country: ['', Validators.required],
     region: ['', Validators.required],
-    otherRegion: [''],
     district: ['', Validators.required],
-    otherDistrict: [''],
     mahalla: ['', Validators.required],
     checkIn: ['', Validators.required],
     checkOut: ['', Validators.required]
   });
 
-  regions = computed(() => {
-    const country = this.countries.find(c => c.id === this.selectedCountry());
-    return country?.regions || [];
-  });
-
-  selectedRegion = signal('');
-  districts = computed(() => {
-    const region = this.regions().find(r => r.id === this.selectedRegion());
-    return region?.districts || [];
-  });
-
   onCountryChange(event: Event) {
-    const val = (event.target as HTMLSelectElement).value;
-    this.selectedCountry.set(val);
+    const countryId = (event.target as HTMLSelectElement).value;
+    this.selectedCountry.set(countryId);
     
-    if (val === 'other') {
-      this.offlineForm.get('region')?.clearValidators();
-      this.offlineForm.get('district')?.clearValidators();
-      this.offlineForm.get('otherCountry')?.setValidators([Validators.required]);
-      this.offlineForm.get('otherRegion')?.setValidators([Validators.required]);
-      this.offlineForm.get('otherDistrict')?.setValidators([Validators.required]);
-    } else {
-      this.offlineForm.get('region')?.setValidators([Validators.required]);
-      this.offlineForm.get('district')?.setValidators([Validators.required]);
-      this.offlineForm.get('otherCountry')?.clearValidators();
-      this.offlineForm.get('otherRegion')?.clearValidators();
-      this.offlineForm.get('otherDistrict')?.clearValidators();
-    }
-    
+    const states = this.locationService.getStatesOfCountry(countryId);
+    this.regions.set(states);
+    this.districts.set([]);
+
     this.offlineForm.patchValue({ 
       region: '', 
-      district: '',
-      otherCountry: '',
-      otherRegion: '',
-      otherDistrict: ''
+      district: ''
     });
-    
-    this.offlineForm.get('region')?.updateValueAndValidity();
-    this.offlineForm.get('district')?.updateValueAndValidity();
-    this.offlineForm.get('otherCountry')?.updateValueAndValidity();
-    this.offlineForm.get('otherRegion')?.updateValueAndValidity();
-    this.offlineForm.get('otherDistrict')?.updateValueAndValidity();
     
     this.selectedRegion.set('');
   }
 
   onRegionChange(event: Event) {
-    const val = (event.target as HTMLSelectElement).value;
-    this.selectedRegion.set(val);
+    const regionId = (event.target as HTMLSelectElement).value;
+    this.selectedRegion.set(regionId);
+
+    const cities = this.locationService.getCitiesOfState(this.selectedCountry(), regionId);
+    this.districts.set(cities);
+
     this.offlineForm.patchValue({ district: '' });
   }
 
@@ -1111,21 +1076,9 @@ export class AdminComponent implements OnDestroy {
     if (this.offlineForm.invalid) return;
     const val = this.offlineForm.value;
     
-    // Get region and district names
-    const lang = this.ts.getLanguage();
-    let countryName = '';
-    let regionName = '';
-    let districtName = '';
-
-    if (val.country === 'other') {
-      countryName = val.otherCountry || 'Boshqa';
-      regionName = val.otherRegion || '';
-      districtName = val.otherDistrict || '';
-    } else {
-      countryName = this.countries.find(c => c.id === val.country)?.name[lang] || val.country || '';
-      regionName = this.regions().find(r => r.id === val.region)?.name[lang] || val.region || '';
-      districtName = this.districts().find(d => d.id === val.district)?.name[lang] || val.district || '';
-    }
+    const countryName = this.countries.find(c => c.id === val.country)?.name || val.country || '';
+    const regionName = this.regions().find(r => r.id === val.region)?.name || val.region || '';
+    const districtName = this.districts().find(d => d.id === val.district)?.name || val.district || '';
 
     const booking: Booking = {
       userId: 'offline',
