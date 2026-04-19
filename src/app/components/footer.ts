@@ -52,7 +52,7 @@ import { CommonModule } from '@angular/common';
 
         <!-- Info & Social -->
         <div class="space-y-8">
-          <h4 class="font-bold text-lg">Ijtimoiy tarmoqlar</h4>
+          <h4 class="font-bold text-lg">{{ t()('contact.social') }}</h4>
           <div class="flex flex-wrap gap-4">
             @for (link of settingsService.contactInfo().socialLinks; track link.url) {
               <a [href]="link.url" target="_blank" class="glass p-3 rounded-xl hover:text-emerald-400 transition-all flex items-center gap-2" [title]="link.platform">

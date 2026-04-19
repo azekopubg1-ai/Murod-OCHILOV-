@@ -65,7 +65,7 @@ import { CommonModule } from '@angular/common';
           } @empty {
             <div class="col-span-full text-center py-24 opacity-50">
               <mat-icon class="text-6xl mb-4">hotel_class</mat-icon>
-              <p>Hozircha xonalar mavjud emas...</p>
+              <p>{{ t()('rooms.none') }}</p>
             </div>
           }
         </div>

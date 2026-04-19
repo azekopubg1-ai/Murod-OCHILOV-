@@ -5,7 +5,7 @@ export type Language =
   | 'ZH' | 'HI' | 'PT' | 'BN' | 'JA' | 'KO' | 'IT' | 'NL' | 'EL' | 'PL' 
   | 'VI' | 'TH' | 'ID' | 'MS' | 'FA' | 'UR' | 'UK' | 'RO' | 'HU' | 'CS' 
   | 'SV' | 'DA' | 'FI' | 'NO' | 'SQ' | 'KM' | 'MY' | 'LO' | 'AM' | 'TI' 
-  | 'SO' | 'SW' | 'AF' | 'AK' | 'AM' | 'AN' | 'AS' | 'AV' | 'AY' | 'AZ'
+  | 'SO' | 'SW' | 'AF' | 'AK' | 'AN' | 'AS' | 'AV' | 'AY' | 'AZ'
   | 'BA' | 'BE' | 'BG' | 'BH' | 'BI' | 'BM' | 'BO' | 'BR' | 'BS' | 'CA'
   | 'CE' | 'CH' | 'CO' | 'CR' | 'CY' | 'DV' | 'DZ' | 'EE' | 'EO' | 'ET'
   | 'EU' | 'FF' | 'FJ' | 'FO' | 'FY' | 'GA' | 'GD' | 'GL' | 'GN' | 'GU'
@@ -18,8 +18,7 @@ export type Language =
   | 'PA' | 'PI' | 'PS' | 'QU' | 'RM' | 'RN' | 'RW' | 'SA' | 'SC' | 'SD'
   | 'SE' | 'SG' | 'SI' | 'SK' | 'SL' | 'SM' | 'SN' | 'ST' | 'SU' | 'TA'
   | 'TE' | 'TG' | 'TK' | 'TL' | 'TN' | 'TO' | 'TS' | 'TT' | 'TW' | 'TY'
-  | 'UG' | 'UK' | 'UR' | 'UZ' | 'VE' | 'VO' | 'WA' | 'WO' | 'XH' | 'YI'
-  | 'YO' | 'ZA' | 'ZU';
+  | 'UG' | 'VE' | 'VO' | 'WA' | 'WO' | 'XH' | 'YI' | 'YO' | 'ZA' | 'ZU';
 
 export const LANGUAGE_NAMES: Record<Language, { name: string, native: string }> = {
   UZ: { name: 'Uzbek', native: 'O\'zbekcha' },
@@ -213,21 +212,66 @@ const baseTranslations = () => ({
   'hero.view_rooms': 'View Rooms',
   'hero.book_now': 'Book Now',
   'rooms.title': 'Our Rooms',
+  'rooms.person': 'person room',
+  'rooms.suite': 'family suite',
+  'rooms.amenities': 'Amenities',
   'rooms.price': 'Price',
   'rooms.book': 'Book Now',
+  'rooms.none': 'No rooms available yet...',
   'booking.title': 'Book a Room',
   'booking.country': 'Country',
   'booking.region': 'Region/State',
   'booking.district': 'District/City',
   'booking.mahalla': 'Neighborhood/Village',
   'booking.submit': 'Confirm',
+  'booking.submitting': 'Sending...',
+  'booking.select': 'Select',
+  'booking.search_placeholder': 'Search...',
+  'booking.mahalla_placeholder': 'Enter neighborhood/village',
   'booking.name': 'Name',
+  'booking.age': 'Age',
+  'booking.passport': 'Passport',
   'booking.phone': 'Phone',
+  'booking.telegram': 'Telegram',
+  'booking.checkIn': 'Check-in',
+  'booking.checkOut': 'Check-out',
+  'booking.gender': 'Gender',
+  'booking.gender.male': 'Male',
+  'booking.gender.female': 'Female',
+  'booking.person': 'Person',
+  'booking.people_count': 'People Count',
+  'booking.only_me': 'Only Me',
+  'booking.status.pending': 'Pending',
+  'booking.status.active': 'Active',
+  'booking.status.archive': 'Archive',
+  'booking.status.rejected': 'Rejected',
+  'booking.my_bookings': 'My Bookings',
+  'booking.success': 'Booking sent successfully!',
+  'booking.error.general': 'An error occurred. Please try again.',
+  'booking.no_room_selected': 'No room type selected',
+  'booking.busy_dates': 'Busy Dates',
+  'booking.no_availability': 'No availability for these dates',
+  'booking.error.date_range': 'Check-out must be after check-in',
   'contact.title': 'Contact Us',
   'contact.address': 'Address',
   'contact.phone': 'Phone',
   'contact.email': 'Email',
-  'contact.telegram': 'Telegram'
+  'contact.telegram': 'Telegram',
+  'contact.social': 'Social Media',
+  'admin.dashboard': 'Dashboard',
+  'admin.rooms': 'Rooms',
+  'admin.bookings': 'Bookings',
+  'admin.contact_settings': 'Settings',
+  'admin.offline': 'Offline Booking',
+  'lang.title': 'Select your language',
+  'lang.subtitle': 'All languages of the world in one place',
+  'lang.search': 'Search language...',
+  'lang.not_found': 'No such language found',
+  'home.map_error': 'Map address is incorrect or not configured yet.',
+  'home.map_admin_hint': 'Enter Google Maps iframe URL from admin panel.',
+  'auth.login': 'Login',
+  'auth.login_google': 'Google via',
+  'auth.login_anon': 'Anonymous'
 });
 
 const translations: Record<Language, Record<string, string>> = {
@@ -260,6 +304,12 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.checkOut': 'Chiqish sanasi',
     'booking.submit': 'Tasdiqlash',
     'booking.select': 'Tanlang',
+    'booking.search_placeholder': 'Qidirish...',
+    'booking.mahalla_placeholder': 'Mahallani yozing',
+    'booking.submitting': 'Yuborilmoqda...',
+    'booking.success': 'Bron muvaffaqiyatli yuborildi!',
+    'booking.error.general': 'Xatolik yuz berdi. Qaytadan urinib ko\'ring.',
+    'booking.no_room_selected': 'Xona turi tanlanmagan',
     'booking.my_bookings': 'Mening bronlarim',
     'booking.people_count': 'Odamlar soni',
     'booking.only_me': 'Faqat o‘zim',
@@ -291,7 +341,18 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.address': 'Manzil',
     'contact.phone': 'Telefon',
     'contact.email': 'Email',
-    'contact.telegram': 'Telegram'
+    'contact.telegram': 'Telegram',
+    'contact.social': 'Ijtimoiy tarmoqlar',
+    'lang.title': 'Tilingizni tanlang',
+    'lang.subtitle': 'Dunyoning barcha tillari bir joyda',
+    'lang.search': 'Tilni qidirish...',
+    'lang.not_found': 'Bunday til topilmadi',
+    'home.map_error': 'Xarita manzili noto‘g‘ri kiritilgan yoki hali sozlanmagan.',
+    'home.map_admin_hint': 'Admin panelidan Google Maps iframe URL-ni kiriting.',
+    'auth.login': 'Kirish',
+    'auth.login_google': 'Google orqali',
+    'auth.login_anon': 'Anonim',
+    'rooms.none': 'Hozircha xonalar mavjud emas...',
   },
   UZ_KR: {
     'nav.home': 'Бош саҳифа',
@@ -368,6 +429,8 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.checkOut': 'Дата выезда',
     'booking.submit': 'Подтвердить',
     'booking.select': 'Выберите',
+    'booking.search_placeholder': 'Поиск...',
+    'booking.mahalla_placeholder': 'Введите район/махаллю',
     'booking.my_bookings': 'Мои бронирования',
     'booking.people_count': 'Количество человек',
     'booking.only_me': 'Только я',
@@ -414,6 +477,8 @@ const translations: Record<Language, Record<string, string>> = {
     'booking.checkOut': 'Check-out date',
     'booking.submit': 'Confirm',
     'booking.select': 'Select',
+    'booking.search_placeholder': 'Search...',
+    'booking.mahalla_placeholder': 'Enter neighborhood/village',
     'booking.my_bookings': 'My Bookings',
     'booking.people_count': 'Number of people',
     'booking.only_me': 'Only me',
@@ -1192,22 +1257,23 @@ export class TranslationService {
     return this.currentLang();
   }
 
-  translate(key: string): string {
-    return translations[this.currentLang()][key] || key;
+  translate(key: string, lang?: Language): string {
+    const targetLang = lang || this.currentLang();
+    return translations[targetLang][key] || translations['EN'][key] || key;
   }
 
   t = computed(() => {
     const lang = this.currentLang();
-    return (key: string) => translations[lang][key] || key;
+    return (key: string) => translations[lang][key] || translations['EN'][key] || key;
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  translateObject(obj: Record<string, unknown> | string | unknown[] | undefined | null): any {
+  translateObject(obj: Record<string, unknown> | string | unknown[] | undefined | null, forceLang?: Language): any {
     if (!obj) return '';
     if (typeof obj === 'string') return obj;
     if (Array.isArray(obj)) return obj;
-    const lang = this.currentLang();
+    const lang = forceLang || this.currentLang();
     const record = obj as Record<string, unknown>;
-    return record[lang] || record['UZ'] || Object.values(record)[0] || '';
+    return record[lang] || record['UZ'] || record['EN'] || Object.values(record)[0] || '';
   }
 }

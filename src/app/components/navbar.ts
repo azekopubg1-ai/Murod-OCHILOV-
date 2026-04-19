@@ -63,7 +63,7 @@ import { FormsModule } from '@angular/forms';
               [disabled]="auth.isLoggingIn()"
               class="bg-white text-black px-4 md:px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {{ auth.isLoggingIn() ? '...' : 'Login' }}
+              {{ auth.isLoggingIn() ? '...' : t()('auth.login') }}
               <mat-icon class="text-sm">expand_more</mat-icon>
             </button>
 
@@ -82,14 +82,14 @@ import { FormsModule } from '@angular/forms';
                   class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3 text-white"
                 >
                   <mat-icon>account_circle</mat-icon>
-                  Google via
+                  {{ t()('auth.login_google') }}
                 </button>
                 <button 
                   (click)="auth.loginAnonymously(); isLoginMenuOpen.set(false)"
                   class="w-full px-4 py-3 text-left text-sm hover:bg-white/10 rounded-xl transition-all flex items-center gap-3 text-white"
                 >
                   <mat-icon>person_outline</mat-icon>
-                  Anonymous
+                  {{ t()('auth.login_anon') }}
                 </button>
               </div>
             }
@@ -125,8 +125,8 @@ import { FormsModule } from '@angular/forms';
         <div class="relative w-full max-w-4xl max-h-[80vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col scale-in animate-in fade-in duration-300">
           <div class="p-6 sm:p-8 border-b border-gray-100 flex items-center justify-between">
             <div class="space-y-1">
-              <h2 class="text-2xl font-bold text-black font-display">Tilingizni tanlang</h2>
-              <p class="text-gray-500 text-sm">Dunyoning barcha tillari bir joyda</p>
+              <h2 class="text-2xl font-bold text-black font-display">{{ t()('lang.title') }}</h2>
+              <p class="text-gray-500 text-sm">{{ t()('lang.subtitle') }}</p>
             </div>
             <button (click)="isLangMenuOpen.set(false)" class="p-4 hover:bg-gray-100 rounded-full transition-all text-gray-400">
               <mat-icon>close</mat-icon>
@@ -138,8 +138,9 @@ import { FormsModule } from '@angular/forms';
               <mat-icon class="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors">search</mat-icon>
               <input 
                 type="text" 
-                [(ngModel)]="searchQuery"
-                placeholder="Tilni qidirish..." 
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+                [placeholder]="t()('lang.search')" 
                 class="w-full pl-16 pr-6 py-5 bg-white border-2 border-transparent focus:border-emerald-500 rounded-3xl outline-none text-lg text-black transition-all shadow-sm"
               >
             </div>
@@ -169,7 +170,7 @@ import { FormsModule } from '@angular/forms';
               } @empty {
                 <div class="col-span-full py-20 flex flex-col items-center justify-center text-gray-400 gap-4">
                   <mat-icon class="text-5xl">language_off</mat-icon>
-                  <p class="text-lg font-medium">Bunday til topilmadi</p>
+                  <p class="text-lg font-medium">{{ t()('lang.not_found') }}</p>
                 </div>
               }
             </div>
@@ -205,9 +206,9 @@ export class NavbarComponent {
   languageMeta = LANGUAGE_NAMES;
   languages = Object.keys(LANGUAGE_NAMES) as Language[];
   
-  searchQuery = '';
+  searchQuery = signal('');
   filteredLanguages = computed(() => {
-    const query = this.searchQuery.toLowerCase();
+    const query = this.searchQuery().toLowerCase();
     if (!query) return this.languages;
     return this.languages.filter(lang => 
       lang.toLowerCase().includes(query) || 
@@ -222,6 +223,6 @@ export class NavbarComponent {
 
   openLangMenu() {
     this.isLangMenuOpen.set(true);
-    this.searchQuery = '';
+    this.searchQuery.set('');
   }
 }

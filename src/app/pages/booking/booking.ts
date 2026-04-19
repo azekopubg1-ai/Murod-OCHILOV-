@@ -143,42 +143,93 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
             </div>
 
             <!-- Location Selection -->
-            <div class="grid md:grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label for="country" class="text-sm font-medium text-white/50">{{ t()('booking.country') }}</label>
-                <select id="country" formControlName="country" (change)="onCountryChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none">
-                  <option value="" disabled selected>{{ t()('booking.select') }}</option>
-                  @for (country of countries; track country.id) {
-                    <option [value]="country.id">{{ country.name }}</option>
-                  }
-                </select>
-              </div>
-            </div>
+            <div class="space-y-6">
+              <div class="grid md:grid-cols-2 gap-6">
+                <!-- Country -->
+                <div class="space-y-2">
+                  <label for="country" class="text-sm font-medium text-white/50">{{ t()('booking.country') }}</label>
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      [placeholder]="t()('booking.search_placeholder') || 'Qidirish...'"
+                      [value]="countrySearch()"
+                      (input)="countrySearch.set($event.target.value)"
+                      class="w-full glass p-4 rounded-t-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 border-b border-white/10"
+                    >
+                    <select 
+                      id="country" 
+                      formControlName="country" 
+                      (change)="onCountryChange()" 
+                      class="w-full glass p-4 rounded-b-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
+                    >
+                      <option value="" disabled selected>{{ t()('booking.select') }}</option>
+                      @for (country of filteredCountries(); track country.id) {
+                        <option [value]="country.id">{{ country.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
 
-            <div class="grid md:grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label for="region" class="text-sm font-medium text-white/50">{{ t()('booking.region') }}</label>
-                <select id="region" formControlName="region" (change)="onRegionChange()" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableRegions().length">
-                  <option value="" disabled selected>{{ t()('booking.select') }}</option>
-                  @for (region of availableRegions(); track region.id) {
-                    <option [value]="region.id">{{ region.name }}</option>
-                  }
-                </select>
+                <!-- Region -->
+                <div class="space-y-2">
+                  <label for="region" class="text-sm font-medium text-white/50">{{ t()('booking.region') }}</label>
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      [disabled]="!availableRegions().length"
+                      [placeholder]="t()('booking.search_placeholder') || 'Qidirish...'"
+                      [value]="regionSearch()"
+                      (input)="regionSearch.set($event.target.value)"
+                      class="w-full glass p-4 rounded-t-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 border-b border-white/10 disabled:opacity-50"
+                    >
+                    <select 
+                      id="region" 
+                      formControlName="region" 
+                      (change)="onRegionChange()" 
+                      class="w-full glass p-4 rounded-b-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none disabled:opacity-50" 
+                      [disabled]="!availableRegions().length"
+                    >
+                      <option value="" disabled selected>{{ t()('booking.select') }}</option>
+                      @for (region of filteredRegions(); track region.id) {
+                        <option [value]="region.id">{{ region.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div class="space-y-2">
-                <label for="district" class="text-sm font-medium text-white/50">{{ t()('booking.district') }}</label>
-                <select id="district" formControlName="district" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none" [disabled]="!availableDistricts().length">
-                  <option value="" disabled selected>{{ t()('booking.select') }}</option>
-                  @for (district of availableDistricts(); track district.id) {
-                    <option [value]="district.id">{{ district.name }}</option>
-                  }
-                </select>
-              </div>
-            </div>
 
-            <div class="space-y-2">
-              <label for="mahalla" class="text-sm font-medium text-white/50">{{ t()('booking.mahalla') }}</label>
-              <input id="mahalla" type="text" formControlName="mahalla" placeholder="Mahallani yozing" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+              <div class="grid md:grid-cols-2 gap-6">
+                <!-- District -->
+                <div class="space-y-2">
+                  <label for="district" class="text-sm font-medium text-white/50">{{ t()('booking.district') }}</label>
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      [disabled]="!availableDistricts().length"
+                      [placeholder]="t()('booking.search_placeholder') || 'Qidirish...'"
+                      [value]="districtSearch()"
+                      (input)="districtSearch.set($event.target.value)"
+                      class="w-full glass p-4 rounded-t-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 border-b border-white/10 disabled:opacity-50"
+                    >
+                    <select 
+                      id="district" 
+                      formControlName="district" 
+                      class="w-full glass p-4 rounded-b-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none disabled:opacity-50" 
+                      [disabled]="!availableDistricts().length"
+                    >
+                      <option value="" disabled selected>{{ t()('booking.select') }}</option>
+                      @for (district of filteredDistricts(); track district.id) {
+                        <option [value]="district.id">{{ district.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <label for="mahalla" class="text-sm font-medium text-white/50">{{ t()('booking.mahalla') }}</label>
+                  <input id="mahalla" type="text" formControlName="mahalla" [placeholder]="t()('booking.mahalla_placeholder') || 'Mahallani yozing'" class="w-full glass p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                </div>
+              </div>
             </div>
 
             <!-- Dates -->
@@ -199,7 +250,7 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
               class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-5 rounded-3xl font-bold text-lg transition-all shadow-xl shadow-emerald-500/20 mt-8"
             >
               @if (isSubmitting()) {
-                <span class="animate-pulse">Yuborilmoqda...</span>
+                <span class="animate-pulse">{{ t()('booking.submitting') }}</span>
               } @else {
                 {{ t()('booking.submit') }}
               }
@@ -257,7 +308,13 @@ export class BookingComponent implements OnInit {
   
   t = computed(() => this.ts.t());
   selectedRoomId = signal<string | null>(null);
-  selectedRoomType = signal<string | null>(null);
+  selectedRoomType = computed(() => {
+    const id = this.selectedRoomId();
+    if (!id) return this.route.snapshot.queryParams['roomType'] || this.t()('booking.no_room_selected');
+    const room = this.roomService.rooms().find(r => r.id === id);
+    if (!room) return this.route.snapshot.queryParams['roomType'] || this.t()('booking.no_room_selected');
+    return this.ts.translateObject(room.type);
+  });
   isSubmitting = signal(false);
   peopleCount = signal(1);
   isRoomAvailable = signal(true);
@@ -270,6 +327,29 @@ export class BookingComponent implements OnInit {
   availableDistricts = signal<LocationItem[]>([]);
   selectedCountryId = signal('');
   selectedRegionId = signal('');
+  countrySearch = signal('');
+  regionSearch = signal('');
+  districtSearch = signal('');
+
+  filteredCountries = computed(() => {
+    const q = this.countrySearch().toLowerCase();
+    if (!q) return this.countries;
+    return this.countries.filter(c => c.name.toLowerCase().includes(q));
+  });
+
+  filteredRegions = computed(() => {
+    const q = this.regionSearch().toLowerCase();
+    const regions = this.availableRegions();
+    if (!q) return regions;
+    return regions.filter(r => r.name.toLowerCase().includes(q));
+  });
+
+  filteredDistricts = computed(() => {
+    const q = this.districtSearch().toLowerCase();
+    const districts = this.availableDistricts();
+    if (!q) return districts;
+    return districts.filter(d => d.name.toLowerCase().includes(q));
+  });
 
   bookingForm = this.fb.group({
     people: this.fb.array([this.createPersonGroup()]),
@@ -321,10 +401,15 @@ export class BookingComponent implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['roomId']) this.selectedRoomId.set(params['roomId']);
-      if (params['roomType']) {
-        this.selectedRoomType.set(params['roomType']);
-        this.checkAvailability();
+      if (params['roomId']) {
+        this.selectedRoomId.set(params['roomId']);
+      } else if (params['roomType']) {
+        // Fallback for direct links with just roomType string
+        // but we'll try to find the roomId if it's unique
+        const room = this.roomService.rooms().find(r => 
+          Object.values(r.type).includes(params['roomType'])
+        );
+        if (room) this.selectedRoomId.set(room.id!);
       }
     });
 
@@ -336,17 +421,14 @@ export class BookingComponent implements OnInit {
 
   async checkAvailability() {
     const val = this.bookingForm.value;
-    const roomType = this.selectedRoomType();
-    if (!val.checkIn || !val.checkOut || !roomType) {
+    const roomId = this.selectedRoomId();
+    if (!val.checkIn || !val.checkOut || !roomId) {
       this.availableSpots.set(0);
       this.isRoomAvailable.set(true);
       return;
     }
 
-    const room = this.roomService.rooms().find(r => {
-      if (typeof r.type === 'string') return r.type === roomType;
-      return Object.values(r.type as Record<string, string>).includes(roomType);
-    });
+    const room = this.roomService.rooms().find(r => r.id === roomId);
     if (!room) return;
 
     const checkIn = new Date(val.checkIn);
@@ -362,7 +444,7 @@ export class BookingComponent implements OnInit {
 
     // Find all active bookings for this room type from public bookings
     const activeBookings = this.bookingService.publicBookings().filter(b => 
-      b.roomType === roomType && 
+      b.roomId === roomId && 
       b.status !== 'rejected' && b.status !== 'archive'
     );
 
@@ -484,7 +566,7 @@ export class BookingComponent implements OnInit {
     const booking: Booking = {
       userId: this.auth.user()!.uid,
       roomId: this.selectedRoomId() || 'general',
-      roomType: this.selectedRoomType() || 'Xona turi tanlanmagan',
+      roomType: this.selectedRoomType() || this.t()('booking.no_room_selected'),
       name: (formValue.people as Booking['people'] || [])[0]?.name || '',
       people: formValue.people as Booking['people'],
       phone: formValue.phone!,
@@ -504,10 +586,10 @@ export class BookingComponent implements OnInit {
       this.setPeopleCount(1);
       this.selectedRoomId.set(null);
       this.selectedRoomType.set(null);
-      this.ns.alert('Bron muvaffaqiyatli yuborildi!');
+      this.ns.alert(this.t()('booking.success'));
     } catch (error) {
       console.error('Booking error:', error);
-      this.ns.alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+      this.ns.alert(this.t()('booking.error.general'));
     } finally {
       this.isSubmitting.set(false);
     }

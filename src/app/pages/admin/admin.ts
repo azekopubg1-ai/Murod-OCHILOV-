@@ -411,8 +411,10 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
                         <div>
                           <div class="text-lg md:text-xl font-bold">{{ booking.name }}</div>
-                          <div class="text-emerald-400 font-medium text-sm md:text-base">{{ booking.roomType }}</div>
-                          <div class="text-[10px] md:text-xs text-white/30">{{ booking.people?.length || 1 }} {{ t()('booking.person') }}</div>
+                          <div class="text-emerald-400 font-medium text-sm md:text-base">
+                            {{ getUzRoomType(booking) }}
+                          </div>
+                          <div class="text-[10px] md:text-xs text-white/30">{{ booking.people?.length || 1 }} {{ ts.translate('booking.person', 'UZ') }}</div>
                         </div>
                         <div 
                           [class]="{
@@ -423,7 +425,7 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                           }"
                           class="px-3 md:px-4 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider self-start"
                         >
-                          {{ t()('booking.status.' + booking.status) }}
+                          {{ ts.translate('booking.status.' + booking.status, 'UZ') }}
                         </div>
                       </div>
 
@@ -777,6 +779,14 @@ export class AdminComponent implements OnDestroy {
       group[lang] = [Array.isArray(val) ? val.join(', ') : val];
     });
     return this.fb.group(group);
+  }
+
+  getUzRoomType(booking: Booking): string {
+    if (booking.roomId) {
+      const room = this.roomService.rooms().find(r => r.id === booking.roomId);
+      if (room) return this.ts.translateObject(room.type, 'UZ');
+    }
+    return booking.roomType; // Fallback
   }
 
   constructor() {

@@ -41,6 +41,7 @@ export interface Booking {
 export interface PublicBooking {
   id?: string;
   userId: string;
+  roomId: string;
   roomType: string;
   checkIn: string;
   checkOut: string;
@@ -161,6 +162,7 @@ export class BookingService {
       // Sync to public
       await setDoc(doc(db, 'public_bookings', docRef.id), {
         userId: booking.userId,
+        roomId: booking.roomId,
         roomType: booking.roomType,
         checkIn: booking.checkIn,
         checkOut: booking.checkOut,
@@ -248,6 +250,7 @@ export class BookingService {
         if (b.id) {
           await setDoc(doc(db, 'public_bookings', b.id), {
             userId: b.userId,
+            roomId: b.roomId,
             roomType: b.roomType,
             checkIn: b.checkIn,
             checkOut: b.checkOut,

@@ -29,34 +29,25 @@ import { AuthService } from '../../services/auth';
       <app-navbar></app-navbar>
 
       <main class="relative z-10 pt-32 px-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-screen text-center">
-        <div class="glass p-8 md:p-12 rounded-[3rem] max-w-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000">
-          <h1 class="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
+        <div class="glass p-10 md:p-16 rounded-[4rem] max-w-4xl animate-in fade-in slide-in-from-bottom-12 duration-1000 border border-white/10">
+          <h1 class="font-display text-5xl md:text-8xl font-bold mb-8 leading-tight tracking-tighter">
             {{ t()('hero.title') }}
           </h1>
-          <p class="text-xl md:text-2xl text-white/70 mb-10 font-medium">
+          <p class="text-xl md:text-2xl text-white/60 mb-12 font-medium max-w-2xl mx-auto leading-relaxed">
             {{ t()('hero.subtitle') }}
           </p>
           
-          <div class="flex flex-col md:flex-row gap-4 justify-center">
-            @if (auth.isAdmin()) {
-              <button 
-                routerLink="/admin"
-                class="bg-emerald-500 text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20"
-              >
-                <mat-icon>admin_panel_settings</mat-icon>
-                Admin Panel
-              </button>
-            }
+          <div class="flex flex-col sm:flex-row gap-6 justify-center">
             <button 
               routerLink="/rooms"
-              class="bg-white text-black px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
+              class="bg-white text-black px-12 py-5 rounded-full font-bold text-xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-white/10"
             >
               <mat-icon>hotel</mat-icon>
               {{ t()('hero.view_rooms') }}
             </button>
             <button 
               routerLink="/booking"
-              class="glass px-10 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              class="glass px-12 py-5 rounded-full font-bold text-xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 border border-white/20"
             >
               <mat-icon>event_available</mat-icon>
               {{ t()('hero.book_now') }}
@@ -64,28 +55,6 @@ import { AuthService } from '../../services/auth';
           </div>
         </div>
 
-        <div class="mt-24 grid grid-cols-2 md:grid-cols-4 gap-8 w-full max-w-5xl">
-          <div class="glass p-6 rounded-3xl text-center">
-            <mat-icon class="text-emerald-400 text-4xl mb-2">hot_tub</mat-icon>
-            <div class="font-bold text-2xl">45°C</div>
-            <div class="text-white/50 text-sm">Issiq suv</div>
-          </div>
-          <div class="glass p-6 rounded-3xl text-center">
-            <mat-icon class="text-blue-400 text-4xl mb-2">wifi</mat-icon>
-            <div class="font-bold text-2xl">Free</div>
-            <div class="text-white/50 text-sm">WiFi</div>
-          </div>
-          <div class="glass p-6 rounded-3xl text-center">
-            <mat-icon class="text-amber-400 text-4xl mb-2">restaurant</mat-icon>
-            <div class="font-bold text-2xl">3x</div>
-            <div class="text-white/50 text-sm">Ovqatlanish</div>
-          </div>
-          <div class="glass p-6 rounded-3xl text-center">
-            <mat-icon class="text-purple-400 text-4xl mb-2">nature_people</mat-icon>
-            <div class="font-bold text-2xl">100%</div>
-            <div class="text-white/50 text-sm">Tabiat</div>
-          </div>
-        </div>
       </main>
 
       <!-- Featured Rooms Section -->
@@ -173,8 +142,8 @@ import { AuthService } from '../../services/auth';
               } @else {
                 <div class="w-full h-full flex flex-col items-center justify-center text-white/30 p-8 text-center">
                   <mat-icon class="text-6xl mb-4">map</mat-icon>
-                  <p>Xarita manzili noto'g'ri kiritilgan yoki hali sozlanmagan.</p>
-                  <p class="text-xs mt-2">Admin panelidan Google Maps iframe URL-ni kiriting.</p>
+                  <p>{{ t()('home.map_error') }}</p>
+                  <p class="text-xs mt-2">{{ t()('home.map_admin_hint') }}</p>
                 </div>
               }
             </div>
