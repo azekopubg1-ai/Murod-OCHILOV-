@@ -31,11 +31,11 @@ export class SettingsService {
     phone: '+998 90 123 45 67',
     email: 'info@murodocilov.uz',
     address: {
-      UZ: 'Namangan viloyati, Chortoq tumani',
-      RU: 'Наманганская область, Чартакский район',
-      EN: 'Namangan region, Chartak district',
-      QQ: 'Namangan walayatı, Shartak rayonı',
-      UZ_KR: 'Наманган вилояти, Чортоқ тумани'
+      UZ: 'Samarqand viloyati, Nurobod tumani, Oltinsoy MFY',
+      RU: 'Самаркандская область, Нурободский район, МСГ Олтинсой',
+      EN: 'Oltinsoy village, Nurobod district, Samarkand region',
+      AR: 'قرية أولتينسوي، منطقة نوروباد، ولاية سمرقند',
+      TR: 'Semerkand vilayeti, Nurobod ilçesi, Oltinsoy köyü'
     },
     mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3012.3456789!2d71.6!3d41.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDHCsDAwJzAwLjAiTiA3McKwMzYnMDAuMCJF!5e0!3m2!1sen!2suz!4v1234567890',
     siteName: {

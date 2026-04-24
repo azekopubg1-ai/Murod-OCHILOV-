@@ -40,7 +40,7 @@ const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationEr
                   <span class="font-bold text-lg">{{ selectedRoomType() }}</span>
                 </div>
               </div>
-              <button (click)="selectedRoomType.set(null)" class="text-white/50 hover:text-white">
+              <button (click)="selectedRoomId.set(null)" class="text-white/50 hover:text-white">
                 <mat-icon>close</mat-icon>
               </button>
             </div>
@@ -310,10 +310,11 @@ export class BookingComponent implements OnInit {
   selectedRoomId = signal<string | null>(null);
   selectedRoomType = computed(() => {
     const id = this.selectedRoomId();
-    if (!id) return this.route.snapshot.queryParams['roomType'] || this.t()('booking.no_room_selected');
-    const room = this.roomService.rooms().find(r => r.id === id);
-    if (!room) return this.route.snapshot.queryParams['roomType'] || this.t()('booking.no_room_selected');
-    return this.ts.translateObject(room.type);
+    if (id) {
+      const room = this.roomService.rooms().find(r => r.id === id);
+      if (room) return this.ts.translateObject(room.type);
+    }
+    return this.route.snapshot.queryParams['roomType'] || null;
   });
   isSubmitting = signal(false);
   peopleCount = signal(1);
@@ -585,7 +586,6 @@ export class BookingComponent implements OnInit {
       this.bookingForm.reset();
       this.setPeopleCount(1);
       this.selectedRoomId.set(null);
-      this.selectedRoomType.set(null);
       this.ns.alert(this.t()('booking.success'));
     } catch (error) {
       console.error('Booking error:', error);

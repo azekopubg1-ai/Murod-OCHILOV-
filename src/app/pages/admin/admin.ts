@@ -724,8 +724,8 @@ export class AdminComponent implements OnDestroy {
 
   languages: Language[] = [
     'UZ', 'UZ_KR', 'RU', 'EN', 'QQ', 
-    'TR', 'AR', 'ES', 'FR', 'DE', 
-    'ZH', 'HI', 'PT', 'BN', 'JA', 'KO'
+    'TR', 'AR', 'TG', 'KK', 'KY', 'AZ',
+    'ES', 'FR', 'DE', 'ZH', 'JA', 'KO', 'HI', 'BN', 'PT', 'FA'
   ];
   isTranslating = signal(false);
   isSubmitting = signal(false);
@@ -733,33 +733,41 @@ export class AdminComponent implements OnDestroy {
   async translateFields(fields: Record<string, string>): Promise<Record<string, Record<Language, string>>> {
     try {
       const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-      const model = ai.models.generateContent({
+      // We list the target languages excluding UZ which is the source
+      const targetLangs = this.languages.filter(l => l !== 'UZ');
+      
+      const prompt = `Translate the following Uzbek texts into these languages: ${targetLangs.join(', ')}.
+        Return the result strictly as a JSON object where each key is the original field name and the value is another object with keys for each target language.
+        Field names to use in output JSON: ${Object.keys(fields).join(', ')}.
+        Target language keys to use: ${targetLangs.join(', ')}.
+        Texts to translate (Uzbek):
+        ${JSON.stringify(fields, null, 2)}`;
+
+      const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Translate the following Uzbek texts into Russian (RU), English (EN), Karakalpak (QQ), Uzbek Cyrillic (UZ_KR), Turkish (TR), Arabic (AR), Spanish (ES), French (FR), German (DE), Chinese (ZH), Hindi (HI), Portuguese (PT), Bengali (BN), Japanese (JA), and Korean (KO). 
-        Return the result strictly as a JSON object where each key is the original field name and the value is another object with keys: RU, EN, QQ, UZ_KR, TR, AR, ES, FR, DE, ZH, HI, PT, BN, JA, KO. 
-        Do not include the original Uzbek (UZ) in the JSON.
-        Fields to translate:
-        ${JSON.stringify(fields, null, 2)}`,
+        contents: prompt,
         config: { responseMimeType: "application/json" }
       });
 
-      const response = await model;
-      const allTranslations = JSON.parse(response.text || '{}');
+      const text = response.text;
+      const allTranslations = JSON.parse(text || '{}');
       
       const result: Record<string, Record<Language, string>> = {};
       for (const key in fields) {
         const trs = allTranslations[key] || {};
         const translations: Record<Language, string> = { UZ: fields[key] } as Record<Language, string>;
-        this.languages.forEach(l => {
-          if (l !== 'UZ') {
-            translations[l] = trs[l] || fields[key];
-          }
+        
+        // Fill other languages
+        targetLangs.forEach(l => {
+          translations[l as Language] = trs[l] || fields[key];
         });
+        
         result[key] = translations;
       }
       return result;
     } catch (error) {
       console.error('Translation error:', error);
+      // Fallback to original text for all languages
       const result: Record<string, Record<Language, string>> = {};
       for (const key in fields) {
         const translations: Record<Language, string> = {} as Record<Language, string>;

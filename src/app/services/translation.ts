@@ -276,6 +276,7 @@ const baseTranslations = () => ({
 
 const translations: Record<Language, Record<string, string>> = {
   UZ: {
+    ...baseTranslations(),
     'nav.home': 'Bosh sahifa',
     'nav.rooms': 'Xonalar',
     'nav.contact': 'Kontakt',
@@ -355,6 +356,7 @@ const translations: Record<Language, Record<string, string>> = {
     'rooms.none': 'Hozircha xonalar mavjud emas...',
   },
   UZ_KR: {
+    ...baseTranslations(),
     'nav.home': 'Бош саҳифа',
     'nav.rooms': 'Хоналар',
     'nav.contact': 'Контакт',
@@ -401,6 +403,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Телеграм'
   },
   RU: {
+    ...baseTranslations(),
     'nav.home': 'Главная',
     'nav.rooms': 'Номера',
     'nav.contact': 'Контакты',
@@ -446,9 +449,19 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.address': 'Адрес',
     'contact.phone': 'Телефон',
     'contact.email': 'Электронная почта',
-    'contact.telegram': 'Телеграм'
+    'contact.telegram': 'Телеграм',
+    'contact.social': 'Социальные сети',
+    'lang.title': 'Выберите ваш язык',
+    'lang.subtitle': 'Все языки мира в одном месте',
+    'lang.search': 'Поиск языка...',
+    'lang.not_found': 'Язык не найден',
+    'auth.login': 'Войти',
+    'auth.login_google': 'Через Google',
+    'auth.login_anon': 'Анонимно',
+    'rooms.none': 'Номера пока не добавлены...',
   },
   EN: {
+    ...baseTranslations(),
     'nav.home': 'Home',
     'nav.rooms': 'Rooms',
     'nav.contact': 'Contact',
@@ -513,6 +526,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   QQ: {
+    ...baseTranslations(),
     'nav.home': 'Bas bet',
     'nav.rooms': 'Xonalar',
     'nav.contact': 'Kontakt',
@@ -575,6 +589,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   TR: {
+    ...baseTranslations(),
     'nav.home': 'Anasayfa',
     'nav.rooms': 'Odalar',
     'nav.contact': 'İletişim',
@@ -621,6 +636,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   AR: {
+    ...baseTranslations(),
     'nav.home': 'الصفحة الرئيسية',
     'nav.rooms': 'الغرف',
     'nav.contact': 'اتصل بنا',
@@ -664,9 +680,19 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.address': 'عنوان',
     'contact.phone': 'هاتف',
     'contact.email': 'بريد إلكتروني',
-    'contact.telegram': 'تيليجرام'
+    'contact.telegram': 'تيليجرام',
+    'contact.social': 'وسائل التواصل الاجتماعي',
+    'lang.title': 'اختر لغتك',
+    'lang.subtitle': 'جميع لغات العالم في مكان واحد',
+    'lang.search': 'البحث عن لغة...',
+    'lang.not_found': 'لم يتم العثور على هذه اللغة',
+    'auth.login': 'تسجيل الدخول',
+    'auth.login_google': 'عبر جوجل',
+    'auth.login_anon': 'مجهول',
+    'rooms.none': 'لا توجد غرف متاحة حالياً...',
   },
   ES: {
+    ...baseTranslations(),
     'nav.home': 'Inicio',
     'nav.rooms': 'Habitaciones',
     'nav.contact': 'Contacto',
@@ -713,6 +739,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   FR: {
+    ...baseTranslations(),
     'nav.home': 'Accueil',
     'nav.rooms': 'Chambres',
     'nav.contact': 'Contact',
@@ -759,6 +786,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   DE: {
+    ...baseTranslations(),
     'nav.home': 'Startseite',
     'nav.rooms': 'Zimmer',
     'nav.contact': 'Kontakt',
@@ -805,6 +833,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   ZH: {
+    ...baseTranslations(),
     'nav.home': '首页',
     'nav.rooms': '客房',
     'nav.contact': '联系方式',
@@ -851,6 +880,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': '电报'
   },
   HI: {
+    ...baseTranslations(),
     'nav.home': 'होम',
     'nav.rooms': 'कमरे',
     'nav.contact': 'संपर्क',
@@ -897,6 +927,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'टेलीग्राम'
   },
   PT: {
+    ...baseTranslations(),
     'nav.home': 'Início',
     'nav.rooms': 'Quartos',
     'nav.contact': 'Contato',
@@ -943,6 +974,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   BN: {
+    ...baseTranslations(),
     'nav.home': 'হোম',
     'nav.rooms': 'রুম',
     'nav.contact': 'যোগাযোগ',
@@ -989,6 +1021,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'টেলিগ্রাম'
   },
   JA: {
+    ...baseTranslations(),
     'nav.home': 'ホーム',
     'nav.rooms': '部屋',
     'nav.contact': 'お問い合わせ',
@@ -1035,6 +1068,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.telegram': 'Telegram'
   },
   KO: {
+    ...baseTranslations(),
     'nav.home': '홈',
     'nav.rooms': '객실',
     'nav.contact': '문의하기',
