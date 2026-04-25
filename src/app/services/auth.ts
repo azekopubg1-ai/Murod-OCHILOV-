@@ -31,9 +31,9 @@ export class AuthService {
           if (user.email === 'shovqiddin45@gmail.com') {
             this.isAdmin.set(true);
             this.permissions.set(['all']);
-          } else if (user.email) {
-            // Check admins collection by email (document ID is the email)
-            const adminDocRef = doc(db, 'admins', user.email);
+          } else {
+            // Check admins collection by uid
+            const adminDocRef = doc(db, 'admins', user.uid);
             const adminSnapshot = await getDoc(adminDocRef);
             
             if (adminSnapshot.exists()) {
@@ -44,10 +44,6 @@ export class AuthService {
               this.isAdmin.set(false);
               this.permissions.set([]);
             }
-          } else {
-            // Anonymous user or user without email
-            this.isAdmin.set(false);
-            this.permissions.set([]);
           }
           
           // Auto redirect to admin if admin logs in

@@ -42,22 +42,20 @@ export class AdminService {
     }
   }
 
-  async addAdmin(admin: Partial<AdminUser>) {
-    if (!admin.email) return;
-    // Use email as doc id, replacing characters that might be problematic if needed
-    // but Firestore allows @ and .
-    await setDoc(doc(db, 'admins', admin.email), {
+  async addAdmin(admin: Partial<AdminUser>, uid: string) {
+    if (!admin.email || !uid) return;
+    await setDoc(doc(db, 'admins', uid), {
       email: admin.email,
       permissions: admin.permissions || ['all'],
       createdAt: admin.createdAt || new Date().toISOString()
     });
   }
 
-  async removeAdmin(email: string) {
-    await deleteDoc(doc(db, 'admins', email));
+  async removeAdmin(uid: string) {
+    await deleteDoc(doc(db, 'admins', uid));
   }
 
-  async updatePermissions(email: string, permissions: string[]) {
-    await setDoc(doc(db, 'admins', email), { permissions }, { merge: true });
+  async updatePermissions(uid: string, permissions: string[]) {
+    await setDoc(doc(db, 'admins', uid), { permissions }, { merge: true });
   }
 }

@@ -223,9 +223,11 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
 
                   @if (isAddingAdmin()) {
                     <form [formGroup]="adminForm" (ngSubmit)="onAddAdmin()" class="glass p-6 rounded-2xl space-y-4">
-                      <div class="grid grid-cols-1 gap-4">
+                      <div class="grid grid-cols-2 gap-4">
                         <input type="email" formControlName="email" placeholder="Google Account Email" class="glass p-3 rounded-xl text-sm">
+                        <input type="text" formControlName="uid" placeholder="User ID (UID)" class="glass p-3 rounded-xl text-sm">
                       </div>
+                      <p class="text-[10px] text-white/50 px-1">Admin qo'shish uchun uning UID raqami zarur. UID ni uning xabaridan yoki Firebase konsolidan olish mumkin.</p>
                       <div class="space-y-2">
                         <span class="text-xs font-bold text-white/30 uppercase tracking-widest">Ruxsatlar</span>
                         <div class="flex flex-wrap gap-2">
@@ -248,13 +250,14 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       <div class="glass p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                         <div>
                           <div class="font-bold">{{ admin.email }}</div>
+                          <div class="text-[10px] text-white/30 uppercase">ID: {{ admin.id }}</div>
                           <div class="flex flex-wrap gap-1 mt-2">
                             @for (p of admin.permissions; track p) {
                               <span class="bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded text-[10px] uppercase font-bold">{{ p }}</span>
                             }
                           </div>
                         </div>
-                        <button (click)="adminService.removeAdmin(admin.email)" class="text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all self-end md:self-auto">
+                        <button (click)="adminService.removeAdmin(admin.id!)" class="text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-all self-end md:self-auto">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>
@@ -459,26 +462,31 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                   <div class="space-y-4 md:space-y-6 px-4">
                     @for (booking of filteredBookings(); track booking.id) {
                     <div class="glass p-5 md:p-6 rounded-[2rem] md:rounded-3xl space-y-4">
-                      <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                        <div>
-                          <div class="text-lg md:text-xl font-bold">{{ booking.name }}</div>
-                          <div class="text-emerald-400 font-medium text-sm md:text-base">
-                            {{ getUzRoomType(booking) }}
+                        <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div>
+                            <div class="text-lg md:text-xl font-bold">{{ booking.name }}</div>
+                            <div class="text-emerald-400 font-medium text-sm md:text-base">
+                              {{ getUzRoomType(booking) }}
+                            </div>
+                            <div class="text-[10px] md:text-xs text-white/30">{{ booking.people?.length || 1 }} {{ ts.translate('booking.person', 'UZ') }}</div>
                           </div>
-                          <div class="text-[10px] md:text-xs text-white/30">{{ booking.people?.length || 1 }} {{ ts.translate('booking.person', 'UZ') }}</div>
+                          <div class="flex items-center gap-2">
+                            <div 
+                              [class]="{
+                                'bg-amber-500/20 text-amber-500': booking.status === 'pending',
+                                'bg-emerald-500/20 text-emerald-500': booking.status === 'active',
+                                'bg-blue-500/20 text-blue-500': booking.status === 'archive',
+                                'bg-rose-500/20 text-rose-500': booking.status === 'rejected'
+                              }"
+                              class="px-3 md:px-4 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider"
+                            >
+                              {{ ts.translate('booking.status.' + booking.status, 'UZ') }}
+                            </div>
+                            <button (click)="onDeleteBooking(booking.id!)" class="text-rose-500/50 hover:text-rose-500 transition-colors p-1" title="Butunlay o'chirish">
+                              <mat-icon class="text-lg">delete</mat-icon>
+                            </button>
+                          </div>
                         </div>
-                        <div 
-                          [class]="{
-                            'bg-amber-500/20 text-amber-500': booking.status === 'pending',
-                            'bg-emerald-500/20 text-emerald-500': booking.status === 'active',
-                            'bg-blue-500/20 text-blue-500': booking.status === 'archive',
-                            'bg-rose-500/20 text-rose-500': booking.status === 'rejected'
-                          }"
-                          class="px-3 md:px-4 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider self-start"
-                        >
-                          {{ ts.translate('booking.status.' + booking.status, 'UZ') }}
-                        </div>
-                      </div>
 
                       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 text-xs md:text-sm text-white/60">
                         <div class="flex items-center gap-2">
@@ -558,16 +566,6 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                             </div>
                           }
                         </div>
-                      } @else if (activeTab() === 'archive' || activeTab() === 'rejected') {
-                        <div class="pt-2">
-                          <button 
-                            (click)="onDeleteBooking(booking.id!)"
-                            class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
-                          >
-                            <mat-icon class="text-sm">delete</mat-icon>
-                            Butunlay o'chirish
-                          </button>
-                        </div>
                       }
                     </div>
                     } @empty {
@@ -605,9 +603,26 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       <label for="room-desc" class="text-xs text-white/50">Tavsif (O'zbek tilida)</label>
                       <textarea id="room-desc" formControlName="UZ" class="w-full glass p-4 rounded-2xl focus:outline-none h-24" placeholder="Xona haqida batafsil ma'lumot..."></textarea>
                     </div>
-                    <div class="space-y-2" formGroupName="amenities">
-                      <label for="room-amenities" class="text-xs text-white/50">Qulayliklar (O'zbek tilida, vergul bilan ajrating)</label>
-                      <input id="room-amenities" type="text" formControlName="UZ" placeholder="WiFi, TV, Konditsioner, ..." class="w-full glass p-4 rounded-2xl focus:outline-none">
+                    <div class="space-y-3">
+                      <label for="room-amenities" class="text-xs text-white/50">Qulayliklar (Tanlang yoki yozing)</label>
+                      <div class="flex flex-wrap gap-2">
+                        @for (amenity of standardAmenities; track amenity.id) {
+                          <button 
+                            type="button"
+                            (click)="toggleAmenity(amenity.id)"
+                            [class.bg-emerald-500]="isAmenitySelected(amenity.id)"
+                            [class.glass]="!isAmenitySelected(amenity.id)"
+                            [class.text-white]="isAmenitySelected(amenity.id)"
+                            [class.text-white/50]="!isAmenitySelected(amenity.id)"
+                            class="px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border border-white/5"
+                          >
+                            {{ amenity.label }}
+                          </button>
+                        }
+                      </div>
+                      <div formGroupName="amenities">
+                        <input id="room-amenities" type="text" formControlName="UZ" placeholder="WiFi, TV, Konditsioner, ..." class="w-full glass p-4 rounded-2xl focus:outline-none">
+                      </div>
                     </div>
                     
                     <div class="space-y-2">
@@ -766,6 +781,34 @@ export class AdminComponent implements OnDestroy {
   editingRoomId = signal<string | null>(null);
   uploadingImage = signal<boolean>(false);
   uploadProgress = signal(0);
+
+  standardAmenities = [
+    { id: 'WiFi', label: 'WiFi' },
+    { id: 'TV', label: 'TV' },
+    { id: 'Radomli suv', label: 'Radomli suv' },
+    { id: 'Konditsioner', label: 'Konditsioner' },
+    { id: 'Dush', label: 'Dush' },
+    { id: 'Sovutgich', label: 'Sovutgich' }
+  ];
+
+  toggleAmenity(id: string) {
+    const current = (this.roomForm.get('amenities.UZ')?.value as string) || '';
+    let amenities = current.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    
+    if (amenities.includes(id)) {
+      amenities = amenities.filter(s => s !== id);
+    } else {
+      amenities.push(id);
+    }
+    
+    this.roomForm.get('amenities.UZ')?.setValue(amenities.join(', '));
+  }
+
+  isAmenitySelected(id: string): boolean {
+    const current = (this.roomForm.get('amenities.UZ')?.value as string) || '';
+    const amenities = current.split(',').map(s => s.trim());
+    return amenities.includes(id);
+  }
 
   availablePermissions = [
     { id: 'all', label: 'Barcha huquqlar' },
@@ -927,6 +970,7 @@ export class AdminComponent implements OnDestroy {
 
   adminForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
+    uid: ['', Validators.required],
     permissions: [[] as string[]]
   });
 
@@ -938,7 +982,7 @@ export class AdminComponent implements OnDestroy {
         email: val.email!,
         permissions: val.permissions || ['all'],
         createdAt: new Date().toISOString()
-      });
+      }, val.uid!);
       this.adminForm.reset();
       this.selectedPermissions = [];
       this.isAddingAdmin.set(false);
@@ -1458,9 +1502,10 @@ export class AdminComponent implements OnDestroy {
     if (confirm("Ushbu bronni butunlay o'chirmoqchimisiz?")) {
       try {
         await this.bookingService.deleteBooking(id);
-        alert("Bron o'chirildi.");
+        this.ns.alert("Bron o'chirildi.");
       } catch (error) {
         console.error('Delete error:', error);
+        this.ns.alert("O'chirishda xatolik yuz berdi.");
       }
     }
   }

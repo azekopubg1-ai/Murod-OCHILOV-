@@ -46,18 +46,18 @@ export class SettingsService {
       UZ_KR: 'Мурод ОЧИЛОВ'
     },
     siteSubtitle: {
-      UZ: 'Issiq Suv Davolash Sanatoryasi',
-      RU: 'Санаторий лечения горячей водой',
-      EN: 'Hot Water Treatment Sanatorium',
-      QQ: 'Issıq Suw Emleniw Sanatoriyası',
-      UZ_KR: 'Иссиқ Сув Даволаш Санаторияси'
+      UZ: 'Radomli Suv Davolash Sanatoryasi',
+      RU: 'Санаторий лечения радоновой водой',
+      EN: 'Radon Water Treatment Sanatorium',
+      QQ: 'Radomlı Suw Emleniw Sanatoriyası',
+      UZ_KR: 'Радомли Сув Даволаш Санаторияси'
     },
     footerDescription: {
-      UZ: 'Sanatoriyamizda tabiiy radonli suv bilan davolanish va dam olish uchun barcha sharoitlar yaratilgan. Salomatligingiz biz uchun muhim.',
-      RU: 'В нашем санатории созданы все условия для лечения и отдыха с использованием природной горячей воды. Ваше здоровье важно для нас.',
-      EN: 'Our sanatorium provides all conditions for treatment and relaxation using natural hot water. Your health is important to us.',
-      QQ: 'Sanatoriyamızda tábiyiy ıssı suw menen emleniw hám dem alıw ushın barlıq sharayatlar jaratılǵan. Salomatlıǵıńız biz ushın áhmiyetli.',
-      UZ_KR: 'Санаториямизда табиий иссиқ сув билан даволаниш ва дам олиш учун барча шароitлар яратилган. Саломатлигингиз биз учун муҳим.'
+      UZ: 'Sanatoriyamizda tabiiy radomli suv bilan davolanish va dam olish uchun barcha sharoitlar yaratilgan. Salomatligingiz biz uchun muhim.',
+      RU: 'В нашем санатории созданы все условия для лечения и отдыха с использованием природной радоновой воды. Ваше здоровье важно для нас.',
+      EN: 'Our sanatorium provides all conditions for treatment and relaxation using natural radon water. Your health is important to us.',
+      QQ: 'Sanatoriyamızda tábiyiy radomlı suw menen emleniw hám dem alıw ushın barlıq sharayatlar jaratılǵan. Salomatlıǵıńız biz ushın áhmiyetli.',
+      UZ_KR: 'Санаториямизда табиий радомли сув билан даволаниш ва дам олиш учун барча шароitлар яратилган. Саломатлигингиз биз учун муҳим.'
     },
     copyright: {
       UZ: '© 2026 Murod OCHILOV Sanatoryasi. Barcha huquqlar himoyalangan.',

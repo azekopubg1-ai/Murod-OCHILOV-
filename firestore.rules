@@ -9,7 +9,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         (request.auth.token.email != null && request.auth.token.email == "shovqiddin45@gmail.com") ||
-        (request.auth.token.email != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email)))
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
@@ -18,17 +18,26 @@ service cloud.firestore {
     }
 
     // Validation helpers
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
     function isValidString(val, min, max) {
       return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    function isValidMapString(val, min, max) {
+      return val is map && val.get('UZ', '') is string && val.get('UZ', '').size() >= min;
     }
 
     function isValidBooking(data) {
       return data.userId is string &&
              isValidString(data.name, 2, 100) &&
              isValidString(data.phone, 7, 20) &&
-             isValidString(data.roomType, 2, 100) &&
+             (data.roomType is string || data.roomType is map) &&
              isValidString(data.checkIn, 10, 30) &&
-             isValidString(data.checkOut, 10, 30);
+             isValidString(data.checkOut, 10, 30) &&
+             data.createdAt is string;
     }
 
     // Rooms: Anyone can read, only admins can write
@@ -49,8 +58,9 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid &&
                       isValidBooking(request.resource.data);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && 
+                                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkOut', 'people', 'phone', 'telegram', 'mahalla']));
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     // Public Bookings: Anyone can read, only admins or the booking creator can write
@@ -59,13 +69,13 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     // Admins: Users can read their own admin status, admins can read/write all
     match /admins/{adminId} {
-      allow get: if isAuthenticated() && (request.auth.token.email == adminId || isAdmin());
+      allow get: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
       allow list: if isAdmin();
       allow write: if isAdmin();
     }
