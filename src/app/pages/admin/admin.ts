@@ -308,33 +308,84 @@ type AdminTab = 'pending' | 'active' | 'archive' | 'rejected' | 'offline' | 'roo
                       </select>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <select formControlName="country" (change)="onCountryChange($event)" class="glass p-4 rounded-2xl appearance-none">
-                        <option value="" disabled selected>Davlat</option>
-                        @for (country of countries; track country.id) {
-                          <option [value]="country.id">{{ country.name }}</option>
-                        }
-                      </select>
+                    <div class="flex items-center justify-between mb-2">
+                       <span class="text-sm font-medium text-white/50 block">{{ t()('booking.address') }}</span>
+                       <button type="button" (click)="isManualAddress.set(!isManualAddress())" class="text-[10px] text-emerald-500 font-bold hover:underline">
+                         {{ isManualAddress() ? "Ro'yxatdan tanlash" : "Qo'lda kiritish" }}
+                       </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div class="space-y-2">
-                        <select formControlName="region" (change)="onRegionChange($event)" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!regions().length">
-                          <option value="" disabled selected>Viloyat</option>
-                          @for (region of regions(); track region.id) {
-                            <option [value]="region.id">{{ region.name }}</option>
-                          }
-                        </select>
+                    @if (isManualAddress()) {
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" formControlName="country" placeholder="Davlat" class="glass p-4 rounded-2xl">
+                        <input type="text" formControlName="region" placeholder="Viloyat/Shtat" class="glass p-4 rounded-2xl">
+                        <input type="text" formControlName="district" placeholder="Tuman/Shahar" class="glass p-4 rounded-2xl">
                       </div>
-                      <div class="space-y-2">
-                        <select formControlName="district" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!districts().length">
-                          <option value="" disabled selected>Tuman</option>
-                          @for (district of districts(); track district.id) {
-                            <option [value]="district.id">{{ district.name }}</option>
+                    } @else {
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                          @if (isOtherCountry()) {
+                            <div class="flex gap-2">
+                              <input type="text" formControlName="country" placeholder="Davlat nomi" class="flex-1 glass p-4 rounded-2xl">
+                              <button type="button" (click)="isOtherCountry.set(false); offlineForm.get('country')?.setValue('')" class="glass p-4 rounded-2xl">
+                                <mat-icon>list</mat-icon>
+                              </button>
+                            </div>
+                          } @else {
+                            <select formControlName="country" (change)="onCountryChange($event)" class="w-full glass p-4 rounded-2xl appearance-none">
+                              <option value="" disabled selected>Davlat</option>
+                              @for (country of countries; track country.id) {
+                                <option [value]="country.id">{{ country.name }}</option>
+                              }
+                              <option value="other">- Boshqa -</option>
+                            </select>
                           }
-                        </select>
+                        </div>
                       </div>
-                    </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                          @if (isOtherRegion()) {
+                            <div class="flex gap-2">
+                              <input type="text" formControlName="region" placeholder="Viloyat nomi" class="flex-1 glass p-4 rounded-2xl">
+                              <button type="button" (click)="isOtherRegion.set(false); offlineForm.get('region')?.setValue('')" class="glass p-4 rounded-2xl">
+                                <mat-icon>list</mat-icon>
+                              </button>
+                            </div>
+                          } @else {
+                            <select formControlName="region" (change)="onRegionChange($event)" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!regions().length && !selectedCountry()">
+                              <option value="" disabled selected>Viloyat</option>
+                              @for (region of regions(); track region.id) {
+                                <option [value]="region.id">{{ region.name }}</option>
+                              }
+                              @if (selectedCountry()) {
+                                <option value="other">- Boshqa -</option>
+                              }
+                            </select>
+                          }
+                        </div>
+                        <div class="space-y-2">
+                          @if (isOtherDistrict()) {
+                            <div class="flex gap-2">
+                              <input type="text" formControlName="district" placeholder="Tuman nomi" class="flex-1 glass p-4 rounded-2xl">
+                              <button type="button" (click)="isOtherDistrict.set(false); offlineForm.get('district')?.setValue('')" class="glass p-4 rounded-2xl">
+                                <mat-icon>list</mat-icon>
+                              </button>
+                            </div>
+                          } @else {
+                            <select formControlName="district" (change)="onDistrictChange($event)" class="w-full glass p-4 rounded-2xl appearance-none" [disabled]="!districts().length && !selectedRegion()">
+                              <option value="" disabled selected>Tuman</option>
+                              @for (district of districts(); track district.id) {
+                                <option [value]="district.id">{{ district.name }}</option>
+                              }
+                              @if (selectedRegion()) {
+                                <option value="other">- Boshqa -</option>
+                              }
+                            </select>
+                          }
+                        </div>
+                      </div>
+                    }
                     <input type="text" formControlName="mahalla" placeholder="Mahalla" class="w-full glass p-4 rounded-2xl">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -706,6 +757,10 @@ export class AdminComponent implements OnDestroy {
   regions = signal<LocationItem[]>([]);
   districts = signal<LocationItem[]>([]);
   searchQuery = signal('');
+  isManualAddress = signal(false);
+  isOtherCountry = signal(false);
+  isOtherRegion = signal(false);
+  isOtherDistrict = signal(false);
   isAddingAdmin = signal(false);
   extendingBookingId = signal<string | null>(null);
   editingRoomId = signal<string | null>(null);
@@ -794,7 +849,7 @@ export class AdminComponent implements OnDestroy {
       const room = this.roomService.rooms().find(r => r.id === booking.roomId);
       if (room) return this.ts.translateObject(room.type, 'UZ');
     }
-    return booking.roomType; // Fallback
+    return this.ts.translateObject(booking.roomType, 'UZ'); // Fallback
   }
 
   constructor() {
@@ -1066,6 +1121,13 @@ export class AdminComponent implements OnDestroy {
 
   onCountryChange(event: Event) {
     const countryId = (event.target as HTMLSelectElement).value;
+    if (countryId === 'other') {
+      this.isOtherCountry.set(true);
+      this.isOtherRegion.set(true);
+      this.isOtherDistrict.set(true);
+      this.offlineForm.patchValue({ country: '', region: '', district: '' });
+      return;
+    }
     this.selectedCountry.set(countryId);
     
     const states = this.locationService.getStatesOfCountry(countryId);
@@ -1082,6 +1144,12 @@ export class AdminComponent implements OnDestroy {
 
   onRegionChange(event: Event) {
     const regionId = (event.target as HTMLSelectElement).value;
+    if (regionId === 'other') {
+      this.isOtherRegion.set(true);
+      this.isOtherDistrict.set(true);
+      this.offlineForm.patchValue({ region: '', district: '' });
+      return;
+    }
     this.selectedRegion.set(regionId);
 
     const cities = this.locationService.getCitiesOfState(this.selectedCountry(), regionId);
@@ -1090,37 +1158,57 @@ export class AdminComponent implements OnDestroy {
     this.offlineForm.patchValue({ district: '' });
   }
 
+  onDistrictChange(event: Event) {
+    const districtId = (event.target as HTMLSelectElement).value;
+    if (districtId === 'other') {
+      this.isOtherDistrict.set(true);
+      this.offlineForm.patchValue({ district: '' });
+      return;
+    }
+  }
+
   async onOfflineSubmit() {
     if (this.offlineForm.invalid) return;
     const val = this.offlineForm.value;
     
-    const countryName = this.countries.find(c => c.id === val.country)?.name || val.country || '';
-    const regionName = this.regions().find(r => r.id === val.region)?.name || val.region || '';
-    const districtName = this.districts().find(d => d.id === val.district)?.name || val.district || '';
+    const isManual = this.isManualAddress();
+    const countryName = isManual ? val.country : this.countries.find(c => c.id === val.country)?.name || val.country || '';
+    const regionName = isManual ? val.region : this.regions().find(r => r.id === val.region)?.name || val.region || '';
+    const districtName = isManual ? val.district : this.districts().find(d => d.id === val.district)?.name || val.district || '';
 
-    const booking: Booking = {
-      userId: 'offline',
-      name: (val.people as Booking['people'] || [])[0]?.name || '',
-      phone: val.phone!,
-      roomType: val.roomType!,
-      roomId: val.roomType!, // For offline, we use roomType as requested roomId
-      region: `${countryName}, ${regionName}`,
-      district: districtName!,
-      mahalla: val.mahalla!,
-      checkIn: val.checkIn!,
-      checkOut: val.checkOut!,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      people: val.people as Booking['people'],
-      telegram: '',
-    };
-
+    this.isTranslating.set(true);
     try {
+      const room = this.roomService.rooms().find(r => r.id === val.roomType);
+      const roomTypeTranslations = room ? room.type : { UZ: val.roomType || '' };
+
+      const addressTranslations = await this.translateFields({
+        region: `${countryName}, ${regionName}`,
+        district: districtName || ''
+      });
+
+      const booking: Booking = {
+        userId: 'offline',
+        name: (val.people as Booking['people'] || [])[0]?.name || '',
+        phone: val.phone!,
+        roomType: roomTypeTranslations as Record<string, string>,
+        roomId: val.roomType!, 
+        region: addressTranslations['region'],
+        district: addressTranslations['district'],
+        mahalla: val.mahalla!,
+        checkIn: val.checkIn!,
+        checkOut: val.checkOut!,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        people: val.people as Booking['people'],
+        telegram: '',
+      };
+
       await this.bookingService.createBooking(booking);
       this.offlineForm.reset({
         people: [{ name: '', age: null, passport: '', gender: 'male' }],
         phone: '',
         roomType: '',
+        country: '',
         region: '',
         district: '',
         mahalla: '',
@@ -1133,6 +1221,8 @@ export class AdminComponent implements OnDestroy {
     } catch (e) {
       console.error(e);
       this.ns.alert('Xatolik yuz berdi.');
+    } finally {
+      this.isTranslating.set(false);
     }
   }
 

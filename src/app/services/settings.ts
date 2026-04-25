@@ -53,7 +53,7 @@ export class SettingsService {
       UZ_KR: 'Иссиқ Сув Даволаш Санаторияси'
     },
     footerDescription: {
-      UZ: 'Sanatoriyamizda tabiiy issiq suv bilan davolanish va dam olish uchun barcha sharoitlar yaratilgan. Salomatligingiz biz uchun muhim.',
+      UZ: 'Sanatoriyamizda tabiiy radonli suv bilan davolanish va dam olish uchun barcha sharoitlar yaratilgan. Salomatligingiz biz uchun muhim.',
       RU: 'В нашем санатории созданы все условия для лечения и отдыха с использованием природной горячей воды. Ваше здоровье важно для нас.',
       EN: 'Our sanatorium provides all conditions for treatment and relaxation using natural hot water. Your health is important to us.',
       QQ: 'Sanatoriyamızda tábiyiy ıssı suw menen emleniw hám dem alıw ushın barlıq sharayatlar jaratılǵan. Salomatlıǵıńız biz ushın áhmiyetli.',

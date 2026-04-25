@@ -19,7 +19,7 @@ export interface Booking {
   userId: string;
   roomId: string; // Requested room type/id
   assignedRoomId?: string; // Actual room assigned by admin
-  roomType: string;
+  roomType: string | Record<string, string>;
   name: string;
   people?: {
     name: string;
@@ -29,8 +29,8 @@ export interface Booking {
   }[];
   phone: string;
   telegram: string;
-  region: string;
-  district: string;
+  region: string | Record<string, string>;
+  district: string | Record<string, string>;
   mahalla: string;
   checkIn: string;
   checkOut: string;
@@ -42,7 +42,7 @@ export interface PublicBooking {
   id?: string;
   userId: string;
   roomId: string;
-  roomType: string;
+  roomType: string | Record<string, string>;
   checkIn: string;
   checkOut: string;
   status: 'pending' | 'active' | 'archive' | 'rejected';
